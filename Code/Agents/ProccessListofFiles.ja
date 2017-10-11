@@ -1,0 +1,167 @@
+<?xml version='1.0' encoding='utf-8'?>
+<agent name='ProccessListofFiles' xmlns='http://www.lotus.com/dxl' version='9.0'
+ maintenanceversion='1.0' replicaid='85257CB50072A923' hide='v3' publicaccess='false'
+ designerversion='8.5.3'>
+<noteinfo noteid='1ea' unid='12487DF9D9DBFC1A85257CA6004EBC9A' sequence='33'>
+<created><datetime dst='true'>20140325T102000,90-04</datetime></created>
+<modified><datetime dst='true'>20140411T134541,35-04</datetime></modified>
+<revised><datetime dst='true'>20140411T134541,34-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140411T134541,35-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,71-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby>
+<designchange><datetime dst='true'>20140411T134541,21-04</datetime></designchange>
+<trigger type='actionsmenu'/>
+<documentset type='runonce'/><code event='action'><javaproject class='JavaAgent.class'
+ codepath='c:\Program Files (x86)\IBM\Lotus\Notes\Data'><java name='JavaAgent.java'>import java.io.File;
+import java.io.FileReader;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
+
+import lotus.domino.*;
+
+import mil.army.us.PDFBox.PdfBoxInterface;
+import mil.army.us.PDFBox.Utils.FileUtils;
+import mil.army.us.PDFBox.Utils.SupportedFileType;
+import mil.army.us.imagetool.ImageConversionUtils;
+import mil.army.us.imagetool.PPTToImage;
+//import mil.army.us.imagetool.ImageTool;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+
+
+public class JavaAgent extends AgentBase {
+
+	public void NotesMain() {
+		PDDocument doc = null;
+		//PDDocument docSource = null;
+		List  deleteMeFiles = null;
+		List  pdfFiles = new ArrayList();
+		String fName = null;
+		String sourceFolder ="C:\\Users\\washingtongl\\Documents\\Temp\\Source\\";
+		String destinationFolder= "C:\\Users\\washingtongl\\Documents\\Temp\\Destination";
+		//String[] fileNames = {"Roster.pdf","readme.txt","XPages - Basics 1.ppt","Page_001.tif","Page_002.tif","Page_003.tif","question.gif","ls-Web_site_rul.pdf","Afables4.tif","ls-Web_site_add.pdf","OpenSource.ppt","Food.pdf", "G4.tiff","big.txt"};
+		String[] fileNames = {"Roster.pdf","readme.txt","XPages - Basics 1.ppt","question.gif","ls-Web_site_rul.pdf","ls-Web_site_add.pdf","OpenSource.ppt","Food.pdf"};
+		
+		PdfBoxInterface app = new PdfBoxInterface();
+
+		
+		try 
+		{
+			Session session = getSession();
+			AgentContext agentContext = session.getAgentContext();			
+			deleteMeFiles = new ArrayList();
+			// (Your code goes here)
+				
+			for(int i = 0; i &lt; fileNames.length;i++)				
+			{
+				/*
+				File f = new File(destinationFolder + "\\CompleteToPdf.pdf");
+				if(f.exists() &amp;&amp; !f.isDirectory()) 
+				{
+					/* do something */ 
+					//doc = PDDocument.load(f);
+				/*}
+				else
+				{
+					doc = new PDDocument();
+					doc.save(destinationFolder + "\\CompleteToPdf.pdf");
+					doc.close();
+				}
+				*/
+				if(app.isFileSupported(sourceFolder + fileNames[i]))
+				{
+					if(FileUtils.isFilePdf((sourceFolder + fileNames[i])))
+					{
+						//app.mergePdfToPdf(destinationFolder + "\\CompleteToPdf.pdf", sourceFolder + fileNames[i]);
+						pdfFiles.add(sourceFolder + fileNames[i]);
+					}
+					else
+					{
+						switch(SupportedFileType.getValue(FileUtils.getExtension(sourceFolder + fileNames[i])))
+						{
+							case 1:case 2:case 3:
+								System.out.println("Processing: " + fileNames[i] );
+								if(destinationFolder.substring(destinationFolder.length() - 1) != "\\")
+								{
+									destinationFolder = destinationFolder + "\\";
+								}
+								fName = FileUtils.getFileNameNoExtention(sourceFolder + fileNames[i]);								
+								app.createPDFFromImage(destinationFolder + fName + ".pdf" ,sourceFolder + fileNames[i]);
+								deleteMeFiles.add(destinationFolder + fName + ".pdf" );
+								pdfFiles.add(destinationFolder + fName + ".pdf");
+								//app.mergePdfToPdf(destinationFolder + "\\CompleteToPdf.pdf", destinationFolder + fName + ".pdf" );							    
+								break;
+							case 4:
+								System.out.println("Processing: " + fileNames[i] );
+								if(destinationFolder.substring(destinationFolder.length() - 1) != "\\")
+								{
+									destinationFolder = destinationFolder + "\\";
+								}
+								fName = FileUtils.getFileNameNoExtention(sourceFolder + fileNames[i]);
+								deleteMeFiles.add(destinationFolder + fName + ".jpg");
+								ImageConversionUtils.convertTiff2Jpeg(sourceFolder + fileNames[i], destinationFolder);
+								app.createPDFFromImage(destinationFolder + fName + ".pdf" ,destinationFolder + fName + ".jpg");
+								deleteMeFiles.add(destinationFolder + fName + ".pdf" );
+								pdfFiles.add(destinationFolder + fName + ".pdf");
+								break;
+							case 5:
+								System.out.println("Processing: " + fileNames[i] );
+								if(destinationFolder.substring(destinationFolder.length() - 1) != "\\")
+								{
+									destinationFolder = destinationFolder + "\\";
+								}
+								fName = FileUtils.getFileNameNoExtention(sourceFolder + fileNames[i]);								
+								app.createPDFFromText(destinationFolder + fName + ".pdf" , new FileReader(sourceFolder + fileNames[i]));
+								deleteMeFiles.add(destinationFolder + fName + ".pdf" );
+								pdfFiles.add(destinationFolder + fName + ".pdf");
+								//app.mergePdfToPdf(destinationFolder + "\\CompleteToPdf.pdf", destinationFolder + fName + ".pdf" );							    
+							    break;
+							case 6:
+								System.out.println("Processing: " + fileNames[i] );
+								if(destinationFolder.substring(destinationFolder.length() - 1) != "\\")
+								{
+									destinationFolder = destinationFolder + "\\";
+								}
+								fName = FileUtils.getFileNameNoExtention(sourceFolder + fileNames[i]);
+								deleteMeFiles.add(destinationFolder + fName + ".pdf" );
+								PPTToImage pit = new PPTToImage();
+						        pit.convertPPTtoImages(sourceFolder + fileNames[i], "jpeg", destinationFolder);
+						        List images = pit.getImageFiles();
+						        app.createPDFFromImage(destinationFolder + fName + ".pdf" , images);
+						        pdfFiles.add(destinationFolder + fName + ".pdf");
+						        //app.createPDDocFromImage(images);
+						        FileUtils.deleteTempFiles(images);
+							    break;
+							case 7:
+								System.out.println("Processing: " + fileNames[i] );
+								//pptxmethod2;
+							    break;     
+							default:
+								System.out.println("Not supported: " + fileNames[i] );
+								//Not supported How did it get here
+								break;
+						}
+					}
+				}
+			}
+			
+			app.mergePdfsFromList(pdfFiles,destinationFolder + "\\CompleteToPdf.pdf");
+			if(deleteMeFiles.size()&gt;-1)
+			FileUtils.deleteTempFiles(deleteMeFiles); 
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}		
+}</java>
+<sharedlibraryref name='PDFBoxCode'/></javaproject></code>
+<rundata processeddocs='0' exitcode='0' agentdata='EDAF4A191C9BEB4385257CB0005CA897'>
+<agentmodified><datetime dst='true'>20140404T125155,13-04</datetime></agentmodified>
+<agentrun><datetime dst='true'>20140404T125207,74-04</datetime></agentrun>
+<runlog>Started running agent 'ProccessListofFiles' on 04/04/2014 12:52:04 PM
+Ran Java Agent Class
+Done running agent 'ProccessListofFiles' on 04/04/2014 12:52:07 PM
+</runlog></rundata>
+<item name='$JavaCompilerSource'><text>1.3</text></item>
+<item name='$JavaCompilerTarget'><text>1.2</text></item></agent>
+

@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE agent SYSTEM 'xmlschemas/domino_9_0_1.dtd'>
+<agent name='jsPDFBridge1' xmlns='http://www.lotus.com/dxl' version='9.0'
+ maintenanceversion='1.0' replicaid='85257CB50072A923' hide='v3' publicaccess='false'
+ designerversion='8.5.3'>
+<noteinfo noteid='15e' unid='4A49BBAF9689FA1985257C92004FFDCE' sequence='2'>
+<created><datetime>20140305T093343,18-05</datetime></created>
+<modified><datetime dst='true'>20140411T134541,25-04</datetime></modified>
+<revised><datetime dst='true'>20140411T134541,24-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140411T134541,25-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,45-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby>
+<designchange><datetime dst='true'>20140411T134541,15-04</datetime></designchange>
+<trigger type='actionsmenu'/>
+<documentset type='runonce'/><code event='options'><lotusscript>%REM
+	Agent jsPDFBridge1
+	Created Feb 28, 2014 by Gregory L Washington/AJ/ARMYJAGC
+	Description: Comments for Agent
+%END REM
+Option Public
+Option Declare
+
+
+</lotusscript></code><code event='initialize'><lotusscript>Sub Initialize
+	' Create a PDDoc IAC object.
+	' Since we don't need to launch Acrobat Viewer on the screen, we don't have
+	' to create Acrobat App object.
+	dim vbCrLf  As String
+	vbCrLf= Chr(13) &amp; Chr(10)
+	
+	Dim jsObj As variant
+	Dim pdDoc As variant
+	Set pdDoc = CreateObject("AcroExch.PDDoc")
+	If pdDoc Is Nothing Then
+		MsgBox("Failed to create Acrobat PDDoc object.")
+		End
+	End If
+
+	' Open the source PDF document
+	Dim SampleFilePath As String
+	SampleFilePath = "C:\Users\washingtongl\Documents\Frameworks\Adobe\Acrobat 9 SDK\Version 1\InterAppCommunicationSupport\TestFiles\TestForm.pdf"
+
+	Dim rc As Integer
+	rc = pdDoc.Open(SampleFilePath)
+	If rc &lt;&gt; -1 Then
+		MsgBox("Failed to open PDF document " &amp; SampleFilePath)
+		End
+	End If
+
+	' Acquire the Acrobat JavaScript Object interface from the PDDoc object
+	Set jsObj = pdDoc.GetJSObject()
+	Dim n As integer
+	n = jsObj.numPages
+
+	'Get some data from SampleFilePath
+	Dim str_Renamed As String
+	str_Renamed = "A PDF document is opened using Acrobat by the BasicIacVBJso program." &amp; vbCrLf
+	str_Renamed = str_Renamed &amp; "Path of the PDF document : " &amp; SampleFilePath &amp; vbCrLf
+	str_Renamed = str_Renamed &amp; "Number of pages in the PDF document : " &amp; jsObj.numPages &amp; vbCrLf
+	str_Renamed = str_Renamed &amp; "Number of words on the first page : " &amp; jsObj.getPageNumWords(0) &amp; vbCrLf
+	MsgBox(str_Renamed)
+
+	' Open AVDoc of the source PDF document in order to use AcroForm functionality.
+	Dim avDoc As Variant
+	set avDoc = CreateObject("Acrobat.CAcroAVDoc")
+	 
+	Set avDoc = pdDoc.OpenAVDoc("Sample PDF File")
+
+	' get acrobat form object
+	Dim formApp As Variant 'AFORMAUTLib.AFormApp
+	Set formApp = CreateObject("AFormAut.App")
+
+	' access some object property in objects inside AcroForm.
+	Dim fields As Variant'AFORMAUTLib.Fields
+	Set fields = formApp.Fields
+	str_Renamed = "Number of form fields in the document : " &amp; fields.Count &amp; vbCrLf
+	MsgBox(str_Renamed)
+
+	' another way to use a JavaScript code in VB is through fields' method ExecuteThisJavascript.
+	Dim nVersion As integer
+	nVersion = Cint(fields.ExecuteThisJavascript("event.value = app.viewerVersion;"))
+	MsgBox("The Acrobat Viewer Version is " &amp; nVersion)
+
+	'finish
+	avDoc.Close(True)
+
+	Set avDoc = Nothing
+	Set pdDoc = Nothing
+	Set jsObj = Nothing
+	Set formApp = Nothing
+	Set fields = Nothing
+End Sub</lotusscript></code>
+<rundata processeddocs='0' exitcode='0' agentdata='4399C40DDC1423F485257C8D00686962'>
+<agentmodified><datetime>20140228T140016,09-05</datetime></agentmodified>
+<agentrun><datetime>20140228T140152,76-05</datetime></agentrun>
+<runlog>Started running agent 'jsPDFBridge1' on 02/28/2014 02:00:27 PM
+Ran LotusScript code
+Done running agent 'jsPDFBridge1' on 02/28/2014 02:01:52 PM
+</runlog></rundata></agent>
+

@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE view SYSTEM 'xmlschemas/domino_9_0_1.dtd'>
+<view xmlns='http://www.lotus.com/dxl' version='9.0' maintenanceversion='1.0'
+ replicaid='85257CB50072A923' showinmenu='true' publicaccess='false' default='true'
+ noviewformat='true'>
+<noteinfo noteid='11e' unid='661F5CDB18D2699585257C92004DA09C' sequence='2'>
+<created><datetime>20140305T090753,88-05</datetime></created>
+<modified><datetime dst='true'>20140411T134541,69-04</datetime></modified>
+<revised><datetime dst='true'>20140411T134541,68-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20171004T115929,20-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,17-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby><code
+ event='selection'><formula>SELECT @All</formula></code>
+<item name='$FormulaClass'><text>1</text></item></view>
+

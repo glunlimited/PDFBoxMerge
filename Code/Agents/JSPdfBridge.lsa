@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE agent SYSTEM 'xmlschemas/domino_9_0_1.dtd'>
+<agent name='JSPdfBridge' xmlns='http://www.lotus.com/dxl' version='9.0' maintenanceversion='1.0'
+ replicaid='85257CB50072A923' hide='v3' publicaccess='false' designerversion='8.5.3'>
+<noteinfo noteid='156' unid='0DF36D450EE94E1085257C92004FEADF' sequence='2'>
+<created><datetime>20140305T093254,71-05</datetime></created>
+<modified><datetime dst='true'>20140411T134541,23-04</datetime></modified>
+<revised><datetime dst='true'>20140411T134541,22-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140411T134541,23-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,43-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby>
+<designchange><datetime dst='true'>20140411T134541,15-04</datetime></designchange>
+<trigger type='actionsmenu'/>
+<documentset type='runonce'/><code event='options'><lotusscript>%REM
+	Agent JSPdfBridge
+	Created Feb 27, 2014 by Gregory L Washington/AJ/ARMYJAGC
+	Description: Comments for Agent
+%END REM
+Option Public
+Option Declare
+Use "AcrobatInterface"
+
+</lotusscript></code><code event='initialize'><lotusscript>Sub Initialize
+	%rem
+	Dim app As Variant
+	Dim avDoc As Variant
+	Dim pdDoc As Variant
+	Dim jso As Variant
+	
+	
+	Set app = CreateObject("AcroExch.App")
+
+	Set avDoc = app.GetActiveDoc ' get the logical doc
+	Set pdDoc = avDoc.GetPDDoc   ' get the physical doc
+	Set jso = pdDoc.GetJSObject  ' get the bridge
+	%end rem
+	Dim sourceFilePathA As String
+	Dim sourceFilePathB As String
+	Dim targetFilePath As String
+	Dim iErr As Integer
+	
+	sourceFilePathA = "C:\Users\washingtongl\Documents\Temp\ls-Web_site_add.pdf"
+	sourceFilePathB = "C:\Users\washingtongl\Documents\Temp\ls-Web_site_rul.pdf"
+	targetFilePath = "C:\Users\washingtongl\Documents\Temp\merged.pdf"
+	
+	
+	Dim AcroApp As Variant
+	Dim jso As Variant
+	Dim rect(0 To 3) As Integer
+
+	Dim theDocument As Variant
+	Dim numPages As Integer
+
+	Set AcroApp = CreateObject("AcroExch.App")
+	Set theDocument = CreateObject("AcroExch.PDDoc")
+	theDocument.Open (sourceFilePathA)
+	numPages = theDocument.GetNumPages()
+	Set jso = theDocument.GetJSObject()
+	rect(0) = 72
+	rect(1) = 72
+	rect(2) = 72 * 4
+	rect(3) = 108
+
+	Dim Field As Variant
+	Set Field = jso.AddField("theField", "text", 0, rect)
+	field.Value = "this Is some text"
+	field.textSize = 12
+	field.textColor = jso.Color.blue
+	field.fillColor = jso.Color.ltGray
+
+	jso.FlattenPages
+
+	If theDocument.Save(PDSaveFull, targetFilePath) = False Then
+		MsgBox "Cannot save the modified document"
+	End If
+
+	theDocument.Close
+
+	AcroApp.Exit
+	Set AcroApp = Nothing
+	Set theDocument = Nothing
+	
+End Sub</lotusscript></code>
+<rundata processeddocs='0' exitcode='0' agentdata='FA7D00F797D132FD85257C8C00729738'>
+<agentmodified><datetime>20140305T093254,73-05</datetime></agentmodified>
+<agentrun><datetime>20140305T134606,52-05</datetime></agentrun>
+<runlog>Started running agent 'JSPdfBridge' on 03/05/2014 01:46:02 PM
+Ran LotusScript code
+Done running agent 'JSPdfBridge' on 03/05/2014 01:46:06 PM
+</runlog></rundata></agent>
+

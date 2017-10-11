@@ -1,0 +1,2650 @@
+<?xml version='1.0' encoding='utf-8'?>
+<scriptlibrary name='PDFBoxCode' xmlns='http://www.lotus.com/dxl' version='9.0'
+ maintenanceversion='1.0' replicaid='85257CB50072A923' hide='v3 v4strict'
+ designerversion='8.5.3'>
+<noteinfo noteid='1c6' unid='4456E3C259EF728485257C9800706F93' sequence='88'>
+<created><datetime dst='true'>20140311T162805,95-04</datetime></created>
+<modified><datetime dst='true'>20140718T140913,40-04</datetime></modified>
+<revised><datetime dst='true'>20140718T140913,39-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140718T140913,40-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,65-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby><code
+ event='library'><javaproject class='mil' codepath='c:\Program Files (x86)\IBM\Lotus\Notes\Data'
+ compiledebug='true'><java name='Untitled.java'>public class Untitled { 
+}</java><java name='mil/army/us/PDFBox/PdfBoxInterface.java'>package mil.army.us.PDFBox;
+
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.FileImageInputStream;
+import javax.imageio.stream.ImageInputStream;
+
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.exceptions.COSVisitorException;
+import org.apache.pdfbox.io.RandomAccessFile;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.edit.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDSimpleFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.xobject.PDCcitt;
+import org.apache.pdfbox.pdmodel.graphics.xobject.PDJpeg;
+import org.apache.pdfbox.pdmodel.graphics.xobject.PDPixelMap;
+import org.apache.pdfbox.pdmodel.graphics.xobject.PDXObjectImage;
+import org.apache.pdfbox.util.PDFMergerUtility;
+
+import com.PureEdge.DTK;
+import com.PureEdge.error.UWIException;
+import com.PureEdge.IFSSingleton;
+import com.PureEdge.xfdl.FormNodeP;
+import com.PureEdge.xfdl.XFDL;
+
+import mil.army.us.PDFBox.Utils.FileUtils;
+import mil.army.us.PDFBox.Utils.MimeTypeUtils;
+//import mil.army.us.imagetool.ImageTool;
+
+
+
+public class PdfBoxInterface {
+	
+	final int MAXBITDEPTH = 24;
+	//final int maxPixelWidth = 850;
+	//final int maxPixelHeight = 1100;
+
+	public PdfBoxInterface() 
+	{
+	}//End default contructor
+	
+	public void writeMessage()
+	{
+		System.out.println("Hello World!"); // Display the string.
+	}//End
+	
+	public void mergePdfsFromFolder(String folder,String destination)
+	{
+		try
+		{
+			PDFMergerUtility mergePdf = new PDFMergerUtility();			
+			File _folder = new File(folder);
+			File[] filesInFolder;
+			filesInFolder = _folder.listFiles();
+
+			for(int x = 0; x &lt; filesInFolder.length; x++) {
+				mergePdf.addSource(filesInFolder[x]);
+			}			
+			mergePdf.setDestinationFileName(destination);
+			mergePdf.mergeDocuments();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}  
+	}//End 
+	
+	public void mergePdfsFromList(List pdfList,String destination)throws IOException, COSVisitorException
+	{		
+		PDFMergerUtility mergePdf = new PDFMergerUtility();				
+		//mergePdf.addSources(pdfList);
+		for (int i = 0; i &lt; pdfList.size(); i++)
+		{
+			mergePdf.addSource(new File((String) pdfList.get(i)));
+		}
+		mergePdf.setDestinationFileName(destination);
+		mergePdf.mergeDocuments();
+
+	}//End 
+
+	public void appendPdfDocToPdfDoc(PDDocument destination, PDDocument source) throws IOException
+	{ 
+		PDFMergerUtility mergePdf = new PDFMergerUtility();	
+
+		mergePdf.appendDocument(destination, source);
+		
+	}
+	
+	public void mergePdfToPdf(String destination, String source) throws IOException, COSVisitorException
+	{ 
+		PDFMergerUtility mergePdf = new PDFMergerUtility();
+		mergePdf.addSource(source);
+		mergePdf.setDestinationFileName(destination);
+		
+		mergePdf.mergeDocuments();
+		//mergePdf.getDestinationStream().close();
+		
+	}
+
+	public PDDocument createNewDocument()
+	{
+		PDDocument document = null;
+		try
+		{			
+			document=new PDDocument();
+			PDPage blankPage = new PDPage();
+			document.addPage( blankPage );
+			return document;
+			
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}//End 
+	
+	public PDDocument createNewLandscapeDocument()
+	{
+		PDDocument document = null;
+		try
+		{			
+			document=new PDDocument();
+			COSDictionary page = new COSDictionary();
+			page.setItem( COSName.TYPE, COSName.PAGE );
+			setMediaBox(page, new PDRectangle( 792, 612) );
+			PDPage blankPage = new PDPage(page);
+			document.addPage(blankPage);
+			return document;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public PDPage createNewLandscapePage()
+	{
+		try
+		{			
+
+			COSDictionary page = new COSDictionary();
+			page.setItem( COSName.TYPE, COSName.PAGE );
+			setMediaBox(page, new PDRectangle( 792, 612) );
+			PDPage blankPage = new PDPage(page);
+			return blankPage;
+
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	private void setMediaBox(COSDictionary page, PDRectangle mediaBox )
+    {
+        if( mediaBox == null )
+        {
+            page.removeItem( COSName.MEDIA_BOX );
+        }
+        else
+        {
+            page.setItem( COSName.MEDIA_BOX, mediaBox.getCOSArray() );
+        }
+    }
+	
+	// http://stackoverflow.com/questions/672916/how-to-get-image-height-and-width-using-java
+	public Dimension getImageDim(final String path) 
+	{
+	    Dimension result = null;
+	    String suffix = FileUtils.getExtension(path);
+	    Iterator iter = ImageIO.getImageReadersBySuffix(suffix);
+	    if (iter.hasNext()) {
+	        ImageReader reader = (ImageReader) iter.next();
+	        try {
+	            ImageInputStream stream = new FileImageInputStream(new File(path));
+	            reader.setInput(stream);
+	            int width = reader.getWidth(reader.getMinIndex());
+	            int height = reader.getHeight(reader.getMinIndex());
+	            result = new Dimension(width, height);
+	        } catch (IOException e) {
+	            //log(e.getMessage());
+	        } finally {
+	            reader.dispose();
+	        }
+	    } else {
+	        //log("No reader found for given format: " + suffix));
+	    }
+	    return result;
+	}//End getImageDim(final String path) 	
+	
+	
+	public void createPDFFromImage( String file, String image) throws IOException, COSVisitorException
+    {
+        // the document
+        PDDocument doc = null;
+        try
+        {
+            doc = new PDDocument();
+
+            PDPage page = new PDPage();
+            doc.addPage( page );
+
+            PDXObjectImage ximage = null;
+            if( image.toLowerCase().endsWith( ".jpg" ) || image.toLowerCase().endsWith(".jpeg"))
+            {
+                ximage = new PDJpeg(doc, new FileInputStream( image ) );
+            }
+            else if (image.toLowerCase().endsWith(".tif") || image.toLowerCase().endsWith(".tiff"))
+            {
+                ximage = new PDCcitt(doc, new RandomAccessFile(new File(image),"r"));
+            }
+            else if(image.toLowerCase().endsWith(".png") || image.toLowerCase().endsWith(".gif"))
+            {
+            	BufferedImage awtImage = ImageIO.read( new File( image ) );
+                ximage = new PDPixelMap(doc, awtImage);
+            }
+            else
+            {               
+                throw new IOException( "Image type not supported:" + image );
+            }
+            PDPageContentStream contentStream = new PDPageContentStream(doc, page);
+
+            contentStream.drawImage( ximage,20, 20 );
+
+            contentStream.close();
+            doc.save( file );
+        }
+        finally
+        {
+            if( doc != null )
+            {
+                doc.close();
+            }
+        }
+    }//End createPDFFromImage( String file, String image)
+	
+	public PDDocument createPDDocFromImage(String image) throws IOException, COSVisitorException
+    {
+        // the document
+        PDDocument doc = null;
+        try
+        {
+            doc = new PDDocument();
+
+            PDPage page = new PDPage();
+            doc.addPage( page );
+
+            PDXObjectImage ximage = null;
+            if( image.toLowerCase().endsWith( ".jpg" )|| image.toLowerCase().endsWith(".jpeg") )
+            {
+                ximage = new PDJpeg(doc, new FileInputStream( image ) );
+            }
+            else if (image.toLowerCase().endsWith(".tif") || image.toLowerCase().endsWith(".tiff"))
+            {
+                ximage = new PDCcitt(doc, new RandomAccessFile(new File(image),"r"));
+            }
+            else if(image.toLowerCase().endsWith(".png") || image.toLowerCase().endsWith(".gif"))
+            {
+            	BufferedImage awtImage = ImageIO.read( new File( image ) );
+                ximage = new PDPixelMap(doc, awtImage);
+            }
+            else
+            {                
+                throw new IOException( "Image type not supported:" + image );
+            }
+            PDPageContentStream contentStream = new PDPageContentStream(doc, page);
+
+            contentStream.drawImage( ximage,20, 20 );
+
+            contentStream.close();
+            return doc;
+        }
+        catch(Exception e)
+        {
+        	e.printStackTrace();
+        	return null;
+        }
+        
+    }//End createPDFFromImage(String image)
+	
+	public PDDocument createPDDocFromImage(List imageFiles) throws IOException, COSVisitorException
+    {
+        // the document
+        PDDocument doc = null;
+        try
+        {
+        	if (imageFiles != null &amp;&amp; imageFiles.size() &gt; 0)
+            { 
+        		doc = new PDDocument();
+        		
+        		//Iterator sit = imageFiles.iterator();
+        		for (int i = 0; i &lt; imageFiles.size(); i++)
+        		{
+        			PDPage page = createNewLandscapePage();
+        			//page.setRotation(90);
+            		doc.addPage( page );
+            		PDPageContentStream contentStream = new PDPageContentStream(doc, page,true,true);
+        			String image = (String) imageFiles.get(i);
+        			System.out.println("Image " + i + " : " + image);
+        			PDXObjectImage ximage = null;
+                    if( image.toLowerCase().endsWith( ".jpg" ) )
+                    {
+                        ximage = new PDJpeg(doc, new FileInputStream( image ) );
+                    }
+                    else if (image.toLowerCase().endsWith(".tif") || image.toLowerCase().endsWith(".tiff"))
+                    {
+                        ximage = new PDCcitt(doc, new RandomAccessFile(new File(image),"r"));
+                    }
+                    else if(image.toLowerCase().endsWith(".png") || image.toLowerCase().endsWith(".gif"))
+                    {
+                    	BufferedImage awtImage = ImageIO.read( new File( image ) );
+                        ximage = new PDPixelMap(doc, awtImage);
+                    }
+                    else
+                    {                        
+                        throw new IOException( "Image type not supported:" + image );
+                    }
+                    contentStream.drawImage( ximage,20, 20 );
+                    contentStream.close();
+        			
+        		}        		           	
+            } 
+        	return doc;  
+        }
+        catch(Exception e)
+        {
+        	e.printStackTrace();
+        	return null;
+        }
+    }//End createPDFFromImages( String file, List image)
+	
+	public void createPDFFromImage( String file, List imageFiles) throws IOException, COSVisitorException
+    {
+        // the document
+        PDDocument doc = null;
+        try
+        {
+        	if (imageFiles != null &amp;&amp; imageFiles.size() &gt; 0)
+            { 
+        		doc = new PDDocument();
+        		
+        		//Iterator sit = imageFiles.iterator();
+        		for (int i = 0; i &lt; imageFiles.size(); i++)
+        		{
+        			PDPage page = createNewLandscapePage();
+        			//page.setRotation(90);
+            		doc.addPage( page );
+            		PDPageContentStream contentStream = new PDPageContentStream(doc, page,true,true);
+        			String image = (String) imageFiles.get(i);
+        			System.out.println("Image " + i + " : " + image);
+        			PDXObjectImage ximage = null;
+                    if( image.toLowerCase().endsWith( ".jpg" ) )
+                    {
+                        ximage = new PDJpeg(doc, new FileInputStream( image ) );
+                    }
+                    else if (image.toLowerCase().endsWith(".tif") || image.toLowerCase().endsWith(".tiff"))
+                    {
+                        ximage = new PDCcitt(doc, new RandomAccessFile(new File(image),"r"));
+                    }
+                    else if(image.toLowerCase().endsWith(".png") || image.toLowerCase().endsWith(".gif"))
+                    {
+                    	BufferedImage awtImage = ImageIO.read( new File( image ) );
+                        ximage = new PDPixelMap(doc, awtImage);
+                    }
+                    else
+                    {                       
+                        throw new IOException( "Image type not supported:" + image );
+                    }
+                    contentStream.drawImage( ximage,20, 20 );
+                    contentStream.close();
+        			
+        		}
+        		doc.save( file );        		
+
+            	
+            }             
+        }
+        finally
+        {
+            if( doc != null )
+            {
+                doc.close();
+            }
+        }
+    }//End createPDFFromImages( String file, List image)
+	
+	
+	public PDDocument createPDDocFromText( Reader text ) throws IOException
+	{
+		int fontSize = 10;
+		PDSimpleFont font = PDType1Font.HELVETICA;
+		PDDocument doc = null;
+		try
+		{
+
+			final int margin = 40;
+			float height = font.getFontDescriptor().getFontBoundingBox().getHeight()/1000;
+
+			//calculate font height and increase by 5 percent.
+			height = height*fontSize*1.05f;
+			doc = new PDDocument();
+			BufferedReader data = new BufferedReader( text );
+			String nextLine = null;
+			PDPage page = new PDPage();
+			PDPageContentStream contentStream = null;
+			float y = -1;
+			float maxStringLength = page.getMediaBox().getWidth() - 2*margin;
+
+			// There is a special case of creating a PDF document from an empty string.
+			boolean textIsEmpty = true;
+
+			while( (nextLine = data.readLine()) != null )
+			{
+
+				// The input text is nonEmpty. New pages will be created and added
+				// to the PDF document as they are needed, depending on the length of
+				// the text.
+				textIsEmpty = false;
+
+				String[] lineWords = nextLine.trim().split( " " );
+				int lineIndex = 0;
+				while( lineIndex &lt; lineWords.length )
+				{
+					StringBuffer nextLineToDraw = new StringBuffer();
+					float lengthIfUsingNextWord = 0;
+					do
+					{
+						nextLineToDraw.append( lineWords[lineIndex] );
+						nextLineToDraw.append( " " );
+						lineIndex++;
+						if( lineIndex &lt; lineWords.length )
+						{
+							String lineWithNextWord = nextLineToDraw.toString() + lineWords[lineIndex];
+							lengthIfUsingNextWord =
+								(font.getStringWidth( lineWithNextWord )/1000) * fontSize;
+						}
+					}
+					while( lineIndex &lt; lineWords.length &amp;&amp;
+							lengthIfUsingNextWord &lt; maxStringLength );
+					if( y &lt; margin )
+					{
+						// We have crossed the end-of-page boundary and need to extend the
+						// document by another page.
+						page = new PDPage();
+						doc.addPage( page );
+						if( contentStream != null )
+						{
+							contentStream.endText();
+							contentStream.close();
+						}
+						contentStream = new PDPageContentStream(doc, page);
+						contentStream.setFont( font, fontSize );
+						contentStream.beginText();
+						y = page.getMediaBox().getHeight() - margin + height;
+						contentStream.moveTextPositionByAmount(
+								margin, y );
+
+					}
+					//System.out.println( "Drawing string at " + x + "," + y );
+
+					if( contentStream == null )
+					{
+						throw new IOException( "Error:Expected non-null content stream." );
+					}
+					contentStream.moveTextPositionByAmount( 0, -height);
+					y -= height;
+					contentStream.drawString( nextLineToDraw.toString() );
+				}
+
+
+			}
+
+			// If the input text was the empty string, then the above while loop will have short-circuited
+			// and we will not have added any PDPages to the document.
+			// So in order to make the resultant PDF document readable by Adobe Reader etc, we'll add an empty page.
+			if (textIsEmpty)
+			{
+				doc.addPage(page);
+			}
+
+			if( contentStream != null )
+			{
+				contentStream.endText();
+				contentStream.close();
+			}
+			return doc;
+		}
+		catch( Exception e )
+		{
+			e.printStackTrace();
+			return null;
+		}
+		
+	}//End createPDDocFromText( Reader text )
+	
+	public void createPDFFromText(String file, Reader text ) throws IOException, COSVisitorException
+	{
+		int fontSize = 10;
+		PDSimpleFont font = PDType1Font.HELVETICA;
+		PDDocument doc = null;
+		try
+		{
+
+			final int margin = 40;
+			float height = font.getFontDescriptor().getFontBoundingBox().getHeight()/1000;
+
+			//calculate font height and increase by 5 percent.
+			height = height*fontSize*1.05f;
+			doc = new PDDocument();
+			BufferedReader data = new BufferedReader( text );
+			String nextLine = null;
+			PDPage page = new PDPage();
+			PDPageContentStream contentStream = null;
+			float y = -1;
+			float maxStringLength = page.getMediaBox().getWidth() - 2*margin;
+
+			// There is a special case of creating a PDF document from an empty string.
+			boolean textIsEmpty = true;
+
+			while( (nextLine = data.readLine()) != null )
+			{
+
+				// The input text is nonEmpty. New pages will be created and added
+				// to the PDF document as they are needed, depending on the length of
+				// the text.
+				textIsEmpty = false;
+
+				String[] lineWords = nextLine.trim().split( " " );
+				int lineIndex = 0;
+				while( lineIndex &lt; lineWords.length )
+				{
+					StringBuffer nextLineToDraw = new StringBuffer();
+					float lengthIfUsingNextWord = 0;
+					do
+					{
+						nextLineToDraw.append( lineWords[lineIndex] );
+						nextLineToDraw.append( " " );
+						lineIndex++;
+						if( lineIndex &lt; lineWords.length )
+						{
+							String lineWithNextWord = nextLineToDraw.toString() + lineWords[lineIndex];
+							lengthIfUsingNextWord =
+								(font.getStringWidth( lineWithNextWord )/1000) * fontSize;
+						}
+					}
+					while( lineIndex &lt; lineWords.length &amp;&amp;
+							lengthIfUsingNextWord &lt; maxStringLength );
+					if( y &lt; margin )
+					{
+						// We have crossed the end-of-page boundary and need to extend the
+						// document by another page.
+						page = new PDPage();
+						doc.addPage( page );
+						if( contentStream != null )
+						{
+							contentStream.endText();
+							contentStream.close();
+						}
+						contentStream = new PDPageContentStream(doc, page);
+						contentStream.setFont( font, fontSize );
+						contentStream.beginText();
+						y = page.getMediaBox().getHeight() - margin + height;
+						contentStream.moveTextPositionByAmount(
+								margin, y );
+
+					}
+					//System.out.println( "Drawing string at " + x + "," + y );
+
+					if( contentStream == null )
+					{
+						throw new IOException( "Error:Expected non-null content stream." );
+					}
+					contentStream.moveTextPositionByAmount( 0, -height);
+					y -= height;
+					contentStream.drawString( nextLineToDraw.toString() );
+				}
+
+
+			}
+
+			// If the input text was the empty string, then the above while loop will have short-circuited
+			// and we will not have added any PDPages to the document.
+			// So in order to make the resultant PDF document readable by Adobe Reader etc, we'll add an empty page.
+			if (textIsEmpty)
+			{
+				doc.addPage(page);
+			}
+
+			if( contentStream != null )
+			{
+				contentStream.endText();
+				contentStream.close();
+			}
+			
+			doc.save( file );  
+		}
+		finally
+		{
+			if( doc != null )
+			{
+				doc.close();
+			}			
+		}	
+	}//End createPDFFromText( Reader text )
+
+
+	public boolean isFileSupported(String fileName) throws Exception
+	{
+		try
+		{			
+			if(fileName.toLowerCase().endsWith(".pdf"))
+			{
+				System.out.println("The MIME type of the file " + fileName + " is: " + MimeTypeUtils.getContentTypeByFileName(fileName));
+				if(MimeTypeUtils.getContentTypeByFileName(fileName).equals("application/pdf") &amp;&amp; FileUtils.isFilePdf(fileName))
+				{
+					return true;
+				}
+				
+			}
+			else if(fileName.toLowerCase().endsWith(".txt"))
+			{
+				System.out.println("The MIME type of the file " + fileName + " is: " + MimeTypeUtils.getContentTypeByFileName(fileName));
+				if(MimeTypeUtils.getContentTypeByFileName(fileName).equals("text/plain"))
+				{
+					return true;
+				}				
+			}
+			else if(fileName.toLowerCase().endsWith(".gif"))
+			{
+				System.out.println("The MIME type of the file " + fileName + " is: " + MimeTypeUtils.getContentTypeByFileName(fileName));
+				if(MimeTypeUtils.getContentTypeByFileName(fileName).equals("image/gif"))
+				{
+					return true;
+				}
+			}
+			else if(fileName.toLowerCase().endsWith(".png"))
+			{
+				System.out.println("The MIME type of the file " + fileName + " is: " + MimeTypeUtils.getContentTypeByFileName(fileName));
+				if(MimeTypeUtils.getContentTypeByFileName(fileName).equals("image/png"))
+				{
+					return true;
+				}
+				
+			}
+			else if(fileName.toLowerCase().endsWith(".tif")||fileName.toLowerCase().endsWith(".tiff") )
+			{
+				System.out.println("The MIME type of the file " + fileName + " is: " + MimeTypeUtils.getContentTypeByFileName(fileName));
+				if(MimeTypeUtils.getContentTypeByFileName(fileName).equals("image/tiff"))
+				{
+					return true;
+				}
+				
+			}
+			else if(fileName.toLowerCase().endsWith(".jpg")||fileName.toLowerCase().endsWith(".jpeg") )
+			{
+				System.out.println("The MIME type of the file " + fileName + " is: " + MimeTypeUtils.getContentTypeByFileName(fileName));
+				if(MimeTypeUtils.getContentTypeByFileName(fileName).equals("image/jpeg"))
+				{
+					return true;
+				}
+
+			}
+			else if(fileName.toLowerCase().endsWith(".ppt")||fileName.toLowerCase().endsWith(".pptx") )
+			{
+				System.out.println("The MIME type of the file " + fileName + " is: " + MimeTypeUtils.getContentTypeByFileName(fileName));
+				return true;
+			}
+			return false;
+			
+		}
+		catch(Exception e)
+		{
+			throw e;
+			//return false;
+		}
+		
+		
+	}
+	
+	public void convertXfdlToPdf(String fileName, String outputPath, boolean isErrorDiffusion)throws Exception
+	{
+		XFDL theXFDL = null;
+		FormNodeP theForm = null;
+		DTK.initialize("PdfBoxInterface", "1.0.0", "5.1.0");
+		theXFDL = IFSSingleton.getXFDL();
+		if(theXFDL == null)
+		{
+			throw new Exception("Could not find interface");
+		}
+		theForm = theXFDL.readForm(fileName, 0);
+		if(theForm == null)
+		{
+			throw new Exception("Could not load form.");
+		}
+		if(outputPath.substring(outputPath.length() - 1) != "\\")
+		{
+			outputPath = outputPath + "\\";
+		}
+		String fName = FileUtils.getFileNameNoExtention(fileName);
+		File file = new File(outputPath + fName + ".xml");
+//		FileOutputStream os = new FileOutputStream(outputPath + fName + ".pdf");
+		// if file doesnt exists, then create it
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+		FileWriter fw = new FileWriter(file.getAbsoluteFile());
+//		PDDocument document = null;
+				
+//			document=new PDDocument();
+//			PDPage blankPage = new PDPage();
+//			document.addPage( blankPage );
+//			PDPageContentStream contentStream = new PDPageContentStream(document, blankPage,true,true);
+			//theForm.extractXFormsInstance(null, "", false, true, null, fw);
+//			contentStream.drawXObject(, null)
+		
+//		theForm.
+		
+		
+		
+		
+		
+	}
+	
+	
+}//End pdfBoxInterface Class
+</java><java name='mil/army/us/PDFBox/Utils/FileUtils.java'>package mil.army.us.PDFBox.Utils;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.FileNameMap;
+import java.net.URLConnection;
+import java.util.List;
+import java.util.Scanner;
+
+public class FileUtils {
+	public static String getMimeType(String fileUrl) throws java.io.IOException {
+	    FileNameMap fileNameMap = URLConnection.getFileNameMap();
+	    String type = fileNameMap.getContentTypeFor(fileUrl);	    	 
+	    return type;
+	}	
+	
+	public static boolean isFilePdf(String fileName)throws IOException
+	{
+		int n = 4;
+		String s = FileUtils.readFile(fileName);
+		String sSub = s.substring(0,n);
+		//System.out.println(sSub);
+		return sSub.toUpperCase().equals("%PDF");
+	}//End 
+		
+	public static String readFile(String pathname) throws IOException 
+	{
+
+	    File file = new File(pathname);
+	    StringBuilder fileContents = new StringBuilder((int)file.length());
+	    Scanner scanner = new Scanner(file);
+	    String lineSeparator = System.getProperty("line.separator");
+
+	    try {
+	        while(scanner.hasNextLine()) {        
+	            fileContents.append(scanner.nextLine() + lineSeparator);
+	        }
+	        return fileContents.toString();
+	    } finally {
+	        scanner.close();
+	    }
+	}//End 
+	
+	public static String getExtension(final String path) 
+	{
+	    String result = null;
+	    if (path != null)
+	    {
+	        result = "";
+	        if (path.lastIndexOf('.') != -1) {
+	            result = path.substring(path.lastIndexOf('.'));
+	            if (result.startsWith(".")) {
+	                result = result.substring(1);
+	            }
+	        }
+	    }
+	    return result;
+	}//End getExtension(final String path) 
+	
+	public static String getFileNameNoExtention(final String path)
+	{
+		String result = null;
+		if(path != null)
+		{
+			if(path.lastIndexOf('\\') != -1)
+			{
+				result = path.substring(path.lastIndexOf('\\') + 1);
+			}
+			if(result.lastIndexOf(' ') != -1)
+			{
+				result = result.replaceAll("\\s+",  "_"); 
+			}
+			if(result.lastIndexOf('.') != -1)
+			{
+				result = result.substring(0, result.indexOf('.'));
+			}
+			
+		}
+		return result;
+	}//End getFileNameNoExtention(final String path) 
+	
+	public static String getFileName(final String path)
+	{
+		String result = null;
+		if(path != null)
+		{
+			if(path.lastIndexOf('\\') != -1)
+			{
+				result = path.substring(path.lastIndexOf('\\') + 1);
+			}
+			if(result.lastIndexOf(' ') != -1)
+			{
+				result = result.replaceAll("\\s+",  "_"); 
+			}
+						
+		}
+		return result;
+	}//End getFileName(final String path) 
+	
+
+
+	public static void deleteTempFiles(List files2Delete)
+	{
+		boolean success = false;
+		File f = null;
+		
+	    for (int i =0; i &lt; files2Delete.size(); i++)
+	    {
+	    	f = new File((String) files2Delete.get(i));
+	    	success = f.delete();
+	    	if(success)
+	    	{
+	    		//Log temp file deleted
+	    		System.out.println("Successfully deleted temp file: " + files2Delete.get(i));
+	    	}
+	    	else
+	    	{
+	    		//Log temp file not deleted
+	    		System.out.println("Unsuccessful deleting temp file: " + files2Delete.get(i));
+	    	}
+	    }
+	   
+	}
+
+
+}
+</java><java name='mil/army/us/PDFBox/Utils/MimeTypeUtils.java'>package mil.army.us.PDFBox.Utils;
+
+import java.net.FileNameMap;
+import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
+import mil.army.us.PDFBox.Utils.FileUtils;
+
+
+public class MimeTypeUtils 
+{
+	 private static final Map fileExtensionMap;
+
+	    static {
+	        fileExtensionMap = new HashMap();
+	        // MS Office
+	        fileExtensionMap.put("doc", "application/msword");
+	        fileExtensionMap.put("dot", "application/msword");
+	        fileExtensionMap.put("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+	        fileExtensionMap.put("dotx", "application/vnd.openxmlformats-officedocument.wordprocessingml.template");
+	        fileExtensionMap.put("docm", "application/vnd.ms-word.document.macroEnabled.12");
+	        fileExtensionMap.put("dotm", "application/vnd.ms-word.template.macroEnabled.12");
+	        fileExtensionMap.put("xls", "application/vnd.ms-excel");
+	        fileExtensionMap.put("xlt", "application/vnd.ms-excel");
+	        fileExtensionMap.put("xla", "application/vnd.ms-excel");
+	        fileExtensionMap.put("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+	        fileExtensionMap.put("xltx", "application/vnd.openxmlformats-officedocument.spreadsheetml.template");
+	        fileExtensionMap.put("xlsm", "application/vnd.ms-excel.sheet.macroEnabled.12");
+	        fileExtensionMap.put("xltm", "application/vnd.ms-excel.template.macroEnabled.12");
+	        fileExtensionMap.put("xlam", "application/vnd.ms-excel.addin.macroEnabled.12");
+	        fileExtensionMap.put("xlsb", "application/vnd.ms-excel.sheet.binary.macroEnabled.12");
+	        fileExtensionMap.put("ppt", "application/vnd.ms-powerpoint");
+	        fileExtensionMap.put("pot", "application/vnd.ms-powerpoint");
+	        fileExtensionMap.put("pps", "application/vnd.ms-powerpoint");
+	        fileExtensionMap.put("ppa", "application/vnd.ms-powerpoint");
+	        fileExtensionMap.put("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+	        fileExtensionMap.put("potx", "application/vnd.openxmlformats-officedocument.presentationml.template");
+	        fileExtensionMap.put("ppsx", "application/vnd.openxmlformats-officedocument.presentationml.slideshow");
+	        fileExtensionMap.put("ppam", "application/vnd.ms-powerpoint.addin.macroEnabled.12");
+	        fileExtensionMap.put("pptm", "application/vnd.ms-powerpoint.presentation.macroEnabled.12");
+	        fileExtensionMap.put("potm", "application/vnd.ms-powerpoint.presentation.macroEnabled.12");
+	        fileExtensionMap.put("ppsm", "application/vnd.ms-powerpoint.slideshow.macroEnabled.12");
+	        // Open Office
+	        fileExtensionMap.put("odt", "application/vnd.oasis.opendocument.text");
+	        fileExtensionMap.put("ott", "application/vnd.oasis.opendocument.text-template");
+	        fileExtensionMap.put("oth", "application/vnd.oasis.opendocument.text-web");
+	        fileExtensionMap.put("odm", "application/vnd.oasis.opendocument.text-master");
+	        fileExtensionMap.put("odg", "application/vnd.oasis.opendocument.graphics");
+	        fileExtensionMap.put("otg", "application/vnd.oasis.opendocument.graphics-template");
+	        fileExtensionMap.put("odp", "application/vnd.oasis.opendocument.presentation");
+	        fileExtensionMap.put("otp", "application/vnd.oasis.opendocument.presentation-template");
+	        fileExtensionMap.put("ods", "application/vnd.oasis.opendocument.spreadsheet");
+	        fileExtensionMap.put("ots", "application/vnd.oasis.opendocument.spreadsheet-template");
+	        fileExtensionMap.put("odc", "application/vnd.oasis.opendocument.chart");
+	        fileExtensionMap.put("odf", "application/vnd.oasis.opendocument.formula");
+	        fileExtensionMap.put("odb", "application/vnd.oasis.opendocument.database");
+	        fileExtensionMap.put("odi", "application/vnd.oasis.opendocument.image");
+	        fileExtensionMap.put("oxt", "application/vnd.openofficeorg.extension");
+	    }
+
+	    public static String getContentTypeByFileName(String fileName) {
+	        // 1. first use java's buildin utils
+	        FileNameMap mimeTypes = URLConnection.getFileNameMap();
+	        String contentType = mimeTypes.getContentTypeFor(fileName);
+	        System.out.println("getContentTypeByFileName " + contentType);
+	        // 2. nothing found -&gt; lookup our in extension map to find types like ".doc" or ".docx"
+	        if (contentType == null) {
+	        	System.out.println("getContentTypeByFileName in if");
+	            String extension = FileUtils.getExtension(fileName);
+	            contentType = (String) fileExtensionMap.get(extension);
+	        }
+	        return contentType;
+	    }
+	    
+	    public static String getMimeType(String fileUrl) throws java.io.IOException {
+		    FileNameMap fileNameMap = URLConnection.getFileNameMap();
+		    String type = fileNameMap.getContentTypeFor(fileUrl);
+		    	 
+		    return type;
+		}
+	    
+	    
+}
+</java><java name='mil/army/us/PDFBox/Utils/SupportedFileType.java'>package mil.army.us.PDFBox.Utils;
+
+import java.util.HashMap;
+
+public class SupportedFileType {
+		
+	private static HashMap fileTypeMap;
+
+	  static {
+	     fileTypeMap = new HashMap();
+	     fileTypeMap.put( "PDF", "0");
+	     fileTypeMap.put( "GIF", "1");
+	     fileTypeMap.put( "JPG", "2");
+	     fileTypeMap.put( "JPEG", "2");
+	     fileTypeMap.put( "PNG", "3");
+	     fileTypeMap.put( "TIF", "4");
+	     fileTypeMap.put( "TIFF", "4");
+	     fileTypeMap.put( "TXT", "5");
+	     fileTypeMap.put( "PPT", "6");
+	     fileTypeMap.put( "PPTX", "7");
+	  }
+
+	  public SupportedFileType() {
+
+	  }
+
+	  public static int getValue( String fileExt) {
+	    return Integer.parseInt((String)fileTypeMap.get( fileExt.toUpperCase()));
+	  }
+	
+}
+</java><java name='mil/army/us/XFDL/Base64.java'>/*
+ * Base64.java
+ *
+ * Brazil project web application toolkit,
+ * export version: 2.0 
+ * Copyright (c) 2000-2002 Sun Microsystems, Inc.
+ *
+ * Sun Public License Notice
+ *
+ * The contents of this file are subject to the Sun Public License
+ * Version 1.0 (the "License"). You may not use this file except in
+ * compliance with the License. A copy of the License is included as
+ * the file "license.terms", and also available at
+ * http://www.sun.com/
+ * 
+ * The Original Code is from:
+ *    Brazil project web application toolkit release 2.0.
+ * The Initial Developer of the Original Code is: cstevens.
+ * Portions created by cstevens are Copyright (C) Sun Microsystems,
+ * Inc. All Rights Reserved.
+ * 
+ * Contributor(s): cstevens, suhler.
+ *
+ * Version:  1.9
+ * Created by cstevens on 00/04/17
+ * Last modified by suhler on 02/07/24 10:49:48
+ */
+package mil.army.us.XFDL;
+
+/**
+ * Utility to base64 encode and decode a string.
+ * @author      Stephen Uhler
+ * @version	1.9, 02/07/24
+ */
+
+public class Base64 {
+	static byte[] encodeData;
+	static String charSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	static {
+		encodeData = new byte[64];
+		for (int i = 0; i&lt;64; i++) {
+			byte c = (byte) charSet.charAt(i);
+			encodeData[i] = c;
+		}
+	}
+
+	private Base64() {}
+
+	/**
+	 * base-64 encode a string
+	 * @param s		The ascii string to encode
+	 * @returns		The base64 encoded result
+	 */
+
+	public static String
+	encode(String s) {
+		return encode(s.getBytes());
+	}
+
+	/**
+	 * base-64 encode a byte array
+	 * @param src	The byte array to encode
+	 * @returns		The base64 encoded result
+	 */
+
+	public static String
+	encode(byte[] src) {
+		return encode(src, 0, src.length);
+	}
+
+	/**
+	 * base-64 encode a byte array
+	 * @param src	The byte array to encode
+	 * @param start	The starting index
+	 * @param len	The number of bytes
+	 * @returns		The base64 encoded result
+	 */
+
+	public static String
+	encode(byte[] src, int start, int length) {
+		byte[] dst = new byte[(length+2)/3 * 4 + length/72];
+		int x = 0;
+		int dstIndex = 0;
+		int state = 0;	// which char in pattern
+		int old = 0;	// previous byte
+		int len = 0;	// length decoded so far
+		int max = length + start;
+		for (int srcIndex = start; srcIndex&lt;max; srcIndex++) {
+			x = src[srcIndex];
+			switch (++state) {
+			case 1:
+				dst[dstIndex++] = encodeData[(x&gt;&gt;2) &amp; 0x3f];
+				break;
+			case 2:
+				dst[dstIndex++] = encodeData[((old&lt;&lt;4)&amp;0x30) 
+				                             | ((x&gt;&gt;4)&amp;0xf)];
+				break;
+			case 3:
+				dst[dstIndex++] = encodeData[((old&lt;&lt;2)&amp;0x3C) 
+				                             | ((x&gt;&gt;6)&amp;0x3)];
+				dst[dstIndex++] = encodeData[x&amp;0x3F];
+				state = 0;
+				break;
+			}
+			old = x;
+			if (++len &gt;= 72) {
+				dst[dstIndex++] = (byte) '\n';
+				len = 0;
+			}
+		}
+
+		/*
+		 * now clean up the end bytes
+		 */
+
+		switch (state) {
+		case 1: dst[dstIndex++] = encodeData[(old&lt;&lt;4) &amp; 0x30];
+		dst[dstIndex++] = (byte) '=';
+		dst[dstIndex++] = (byte) '=';
+		break;
+		case 2: dst[dstIndex++] = encodeData[(old&lt;&lt;2) &amp; 0x3c];
+		dst[dstIndex++] = (byte) '=';
+		break;
+		}
+		return new String(dst);
+	}
+
+	/**
+	 * A Base64 decoder.  This implementation is slow, and 
+	 * doesn't handle wrapped lines.
+	 * The output is undefined if there are errors in the input.
+	 * @param s		a Base64 encoded string
+	 * @returns		The byte array eith the decoded result
+	 */
+
+	public static byte[]
+	                   decode(String s) {
+		int end = 0;	// end state
+		if (s.endsWith("=")) {
+			end++;
+		}
+		if (s.endsWith("==")) {
+			end++;
+		}
+		int len = (s.length() + 3)/4 * 3 - end;
+		byte[] result = new byte[len];
+		int dst = 0;
+		try {
+			for(int src = 0; src&lt; s.length(); src++) {
+				int code =  charSet.indexOf(s.charAt(src));
+				if (code == -1) {
+					break;
+				}
+				switch (src%4) {
+				case 0:
+					result[dst] = (byte) (code&lt;&lt;2);
+					break;
+				case 1: 
+					result[dst++] |= (byte) ((code&gt;&gt;4) &amp; 0x3);
+					result[dst] = (byte) (code&lt;&lt;4);
+					break;
+				case 2:
+					result[dst++] |= (byte) ((code&gt;&gt;2) &amp; 0xf);
+					result[dst] = (byte) (code&lt;&lt;6);
+					break;
+				case 3:
+					result[dst++] |= (byte) (code &amp; 0x3f);
+					break;
+				}
+			}
+		} catch (ArrayIndexOutOfBoundsException e) {}
+		return result;
+	}
+
+	/**
+	 * Test the decoder and encoder.
+	 * Call as &lt;code&gt;Base64 [string]&lt;/code&gt;.
+	 */
+
+	public static void
+	main(String[] args) {
+		System.out.println("encode: " + args[0]  + " -&gt; (" 
+				+ encode(args[0]) + ")");
+		System.out.println("decode: " + args[0]  + " -&gt; (" 
+				+ new String(decode(args[0])) + ")");
+	}
+}
+
+</java><java name='mil/army/us/XFDL/CalculateAge.java'>package mil.army.us.XFDL;
+
+import com.PureEdge.DTK;
+import com.PureEdge.xfdl.FormNodeP;
+import com.PureEdge.xfdl.XFDL;
+import com.PureEdge.error.UWIException;
+import com.PureEdge.IFSSingleton;
+
+
+public class CalculateAge {
+	private static FormNodeP theForm;
+	public static void runCode()
+	{
+		int birthYear;
+		int birthMonth;
+		int birthDay;
+		try
+		{
+			initialize();
+
+			loadForm();
+
+			birthYear = getBirthYear();
+			birthMonth = getBirthMonth();
+			birthDay = getBirthDay();
+			System.out.println(birthYear);
+			System.out.println(birthMonth);
+			System.out.println(birthDay);
+			setBirthYear(1998);
+			setBirthMonth(12);
+			setBirthDay(1);
+
+			saveForm();
+			theForm.destroy();
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();	
+		}
+	}//runCode
+
+	private static void initialize() throws UWIException
+	{
+		DTK.initialize("calculateAge", "1.1.0", "6.5.0");
+	}
+	private static void loadForm() throws Exception
+	{
+		XFDL theXFDL;
+		theXFDL = IFSSingleton.getXFDL();
+		if(theXFDL == null)
+			throw new Exception("Could not find interface");
+		theForm = theXFDL.readForm("C:\\Users\\gwashington\\Documents\\Temp\\Sample.xfdl", 0);
+	}
+
+	private static int getBirthDay( ) throws Exception
+	{
+		String temp;
+		temp = theForm.getLiteralByRefEx(null, "PAGE1.BIRTHDAY.value", 0, 
+				null, null);
+		if (temp.length( ) &gt; 0)
+		{
+			return Integer.parseInt(temp);
+		}
+		else
+		{
+			throw new UWIException("The birth day was not entered.");
+		}
+	}
+	private static int getBirthMonth( ) throws Exception
+	{
+		String temp;
+		temp = theForm.getLiteralByRefEx(null, "PAGE1.BIRTHMONTH.value", 0, 
+				null, null);
+		if (temp.length( ) &gt; 0)
+		{
+			return Integer.parseInt(temp);
+		}
+		else
+		{
+			throw new UWIException("The birth month was not entered.");
+		}
+	}
+
+	private static int getBirthYear( ) throws Exception
+	{
+		String temp;
+		temp = theForm.getLiteralByRefEx(null, "PAGE1.BIRTHYEAR.value", 0, 
+				null, null);
+		if (temp.length( ) &gt; 0)
+		{
+			return Integer.parseInt(temp);
+		}
+		else
+		{
+			throw new UWIException("The birth year was not entered.");
+		}
+	}
+
+	private static void setBirthDay(int birDay) throws Exception
+	{
+		Integer day = new Integer(birDay);
+		theForm.setLiteralByRefEx(null, "PAGE1.HIDDENDAY.value", 0, 
+				null, null, day.toString());
+	}
+
+	private static void setBirthMonth(int birMth) throws Exception
+	{
+		Integer month = new Integer(birMth);
+		theForm.setLiteralByRefEx(null, "PAGE1.HIDDENMONTH.value", 0, 
+				null, null, month.toString());
+	}
+
+	private static void setBirthYear(int birYr) throws Exception
+	{
+		Integer yr = new Integer(birYr);
+		theForm.setLiteralByRefEx(null, "PAGE1.HIDDENYEAR.value", 0, 
+				null, null, yr.toString());
+	}
+
+	private static void saveForm( ) throws UWIException
+	{
+		theForm.writeForm("C:\\Users\\gwashington\\Documents\\Temp\\Output.xfdl", null, 0);
+	}
+
+}//CalculateAge
+</java><java name='mil/army/us/imagetool/ImageConversionUtils.java'>package mil.army.us.imagetool;
+
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferByte;
+import java.awt.image.IndexColorModel;
+import java.awt.image.MultiPixelPackedSampleModel;
+import java.awt.image.RenderedImage;
+import java.awt.image.SampleModel;
+import java.awt.image.WritableRaster;
+import java.awt.image.renderable.ParameterBlock;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import javax.media.jai.ColorCube;
+import javax.media.jai.ImageLayout;
+import javax.media.jai.JAI;
+import javax.media.jai.KernelJAI;
+import javax.media.jai.LookupTableJAI;
+import javax.media.jai.NullOpImage;
+import javax.media.jai.OpImage;
+import javax.media.jai.PlanarImage;
+
+import com.sun.image.codec.jpeg.JPEGCodec;
+import com.sun.image.codec.jpeg.JPEGImageEncoder;
+import non_com.media.jai.codec.FileSeekableStream;
+import non_com.media.jai.codec.ImageCodec;
+import non_com.media.jai.codec.ImageDecoder;
+import non_com.media.jai.codec.SeekableStream;
+import non_com.media.jai.codec.TIFFDecodeParam;
+import non_com.media.jai.codec.TIFFEncodeParam;
+
+import mil.army.us.PDFBox.Utils.FileUtils;
+
+/**
+ * @author Gregory Washington
+ *
+ */
+
+public class ImageConversionUtils {
+	
+	public static void convertTiff2Jpeg(String fileName, String outputPath)throws IOException
+	{
+		if(outputPath.substring(outputPath.length() - 1) != "\\")
+		{
+			outputPath = outputPath + "\\";
+		}
+		String fName = FileUtils.getFileNameNoExtention(fileName);
+		String targetFile = outputPath + fName + ".jpg";
+		FileSeekableStream stream = null;
+	    stream = new FileSeekableStream(fileName);
+	    ImageDecoder dec = ImageCodec.createImageDecoder("tiff", stream,null);
+	    RenderedImage image =   dec.decodeAsRenderedImage(0);
+	    JAI.create("filestore",image ,targetFile,"JPEG");
+	}
+	
+	
+	
+	
+	/**
+	 * Converts a tiff image file to a jpeg image file.
+	 *
+	 * @param fileName the full path to the source file
+	 * @param outputPath the output path of the new file.
+	 *
+	 * @throws IOException If there is an error accessing data from either file.
+	 */	
+	public static void convertTiffToJpeg(String fileName, String outputPath)throws IOException
+	{
+		if(outputPath.substring(outputPath.length() - 1) != "\\")
+		{
+			outputPath = outputPath + "\\";
+		}
+		String fName = FileUtils.getFileNameNoExtention(fileName);	
+		File tiffFile = new File(fileName);
+		SeekableStream s = new FileSeekableStream(tiffFile);
+		TIFFDecodeParam param = null;
+		ImageDecoder dec = ImageCodec.createImageDecoder("tiff", s, param);
+		RenderedImage op = dec.decodeAsRenderedImage(0);
+		FileOutputStream fos = new FileOutputStream(outputPath + fName + ".jpg");
+		JPEGImageEncoder jpeg = JPEGCodec.createJPEGEncoder(fos);
+		jpeg.encode(op.getData());
+		fos.close();
+	}
+	
+	public static byte[] extractBytes (String ImageName) throws IOException 
+	{
+		// open image
+		File imgPath = new File(ImageName);
+		BufferedImage bufferedImage = ImageIO.read(imgPath);
+
+		// get DataBufferBytes from Raster
+		WritableRaster raster = bufferedImage .getRaster();
+		DataBufferByte data   = (DataBufferByte) raster.getDataBuffer();
+
+		return ( data.getData() );
+	}
+	
+	public static BufferedImage getImage(byte[] bytes) 
+	{
+		try 
+		{
+			ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+			return ImageIO.read(bais);
+		} catch (IOException e) {
+			throw new Error("Should not happen", e);
+		}
+	}
+	
+	public static InputStream toJPEGInputStream(BufferedImage image) 
+	{
+		try 
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ImageIO.write(image, "JPEG", baos);		
+			baos.close();
+			return new ByteArrayInputStream(baos.toByteArray());
+		} catch (IOException e) {
+			throw new Error("Should not happen", e);
+		}
+	}
+	
+	/**
+	 * Converts a image file from one format to a another image format file. Input formats supported jpg,gif and png.
+	 * Output formats supported jpg,gif and png.
+	 *
+	 * @param fileName the full path to the source file
+	 * @param outputType the type image file to be created (ie. jpg,gif or png)
+	 * @param outputPath the output path of the new file.
+	 *
+	 * @throws IOException If there is an error accessing data from either file.
+	 */	
+	public static void convertImage(String fileName,String outputType, String outputPath) throws IOException
+	{	
+		if(outputPath.substring(outputPath.length() - 1) != "\\")
+		{
+			outputPath = outputPath + "\\";
+		}
+		String fName = FileUtils.getFileNameNoExtention(fileName);	
+		BufferedImage image = ImageIO.read(new File(fileName));
+		if(outputType.toLowerCase().equals("jpg"))
+		{
+			ImageIO.write( image, "jpg",new File(outputPath + fName + ".jpg"));
+		}
+		else if(outputType.toLowerCase().equals("gif"))
+		{
+			ImageIO.write( image, "gif",new File(outputPath + fName + ".gif"));
+		}
+		else if(outputType.toLowerCase().equals("png"))
+		{
+			ImageIO.write( image, "png",new File(outputPath + fName + ".png"));
+		}      
+		
+	}
+	
+	public static void convertTiffCompression(String fileName, String outputPath)throws IOException
+	{
+		if(outputPath.substring(outputPath.length() - 1) != "\\")
+		{
+			outputPath = outputPath + "\\";
+		}
+		String fName = FileUtils.getFileNameNoExtention(fileName);	
+		File tiffFile = new File(fileName);
+		SeekableStream s = new FileSeekableStream(tiffFile);
+		TIFFDecodeParam dParams = null;
+		TIFFEncodeParam params = new TIFFEncodeParam();		
+		params.setCompression(TIFFEncodeParam.COMPRESSION_GROUP3_1D );
+		params.setWriteTiled(false);
+		ImageDecoder dec = ImageCodec.createImageDecoder("tiff", s, dParams);
+		RenderedImage image =   new NullOpImage(dec.decodeAsRenderedImage(0),null,null,OpImage.OP_IO_BOUND);
+		System.out.println(image.getColorModel().getPixelSize());
+
+		FileOutputStream os = new FileOutputStream(outputPath + fName + ".tif");
+		JAI.create("encode", image, os, "TIFF", params);
+	}
+
+	public static void convertRGBToBilevel(String fileName, String outputPath, boolean isErrorDiffusion)throws IOException
+	{
+		if(outputPath.substring(outputPath.length() - 1) != "\\")
+		{
+			outputPath = outputPath + "\\";
+		}
+		String fName = FileUtils.getFileNameNoExtention(fileName);
+		TIFFEncodeParam params = new TIFFEncodeParam();		
+		params.setCompression(TIFFEncodeParam.COMPRESSION_GROUP3_1D );
+		
+		// Load the file.
+		PlanarImage src = JAI.create("fileload", fileName);
+
+		// Load the ParameterBlock for the dithering operation
+		// and set the operation name.
+		ParameterBlock pb = new ParameterBlock();
+		pb.addSource(src);
+		String opName = null;
+		if(isErrorDiffusion) {
+			opName = "errordiffusion";
+			LookupTableJAI lut = new LookupTableJAI(new byte[][] {{(byte)0x00,(byte)0xff},{(byte)0x00,(byte)0xff},{(byte)0x00,(byte)0xff}});
+			pb.add(lut);
+			pb.add(KernelJAI.ERROR_FILTER_FLOYD_STEINBERG);
+		} else {
+			opName = "ordereddither";
+			ColorCube cube = ColorCube.createColorCube(DataBuffer.TYPE_BYTE, 0, new int[] {2, 2, 2});
+			pb.add(cube);
+			pb.add(KernelJAI.DITHER_MASK_443);
+		}
+
+		// Create a layout containing an IndexColorModel which maps
+		// zero to zero and unity to 255; force SampleModel to be bilevel.
+		ImageLayout layout = new ImageLayout();
+		byte[] map = new byte[] {(byte)0x00, (byte)0xff};
+		ColorModel cm = new IndexColorModel(1, 2, map, map, map);
+		layout.setColorModel(cm);
+		SampleModel sm = new MultiPixelPackedSampleModel(DataBuffer.TYPE_BYTE,src.getWidth(),src.getHeight(),1);
+		layout.setSampleModel(sm);
+
+		// Create a hint containing the layout.
+		RenderingHints hints = new RenderingHints(JAI.KEY_IMAGE_LAYOUT,layout);
+
+		// Dither the image.
+		PlanarImage dst = JAI.create(opName, pb, hints);
+		//FileOutputStream out = new FileOutputStream()
+		FileOutputStream os = new FileOutputStream(outputPath + fName + ".tif");
+		JAI.create("encode", dst, os, "TIFF", params);
+
+	}
+	
+	public static BufferedImage[] splitMultiPageTiff(String fileName) throws IOException
+	{
+		BufferedImage images[];		
+		
+		ImageInputStream is = ImageIO.createImageInputStream(new File(fileName));
+		if (is == null || is.length() == 0){
+		  // handle error
+		}
+		Iterator iterator = ImageIO.getImageReaders(is);
+		if (iterator == null || !iterator.hasNext()) {
+		  throw new IOException("Image file format not supported by ImageIO: " + fileName);
+		}
+		// We are just looking for the first reader compatible:
+		ImageReader imageReader = (ImageReader) iterator.next();
+		iterator = null;
+		imageReader.setInput(is);
+		int numPages = imageReader.getNumImages(true);
+		images = new BufferedImage[numPages];
+	      for (int i = 0; i &lt; numPages; ++i) {
+	        images[i] = imageReader.read(i);
+	      }
+		return images;
+	}
+	
+	/*
+    public boolean convertToTiff(File tiffFile, BufferedImage image) {
+
+        ImageOutputStream ios = null;
+        ImageWriter writer = null;
+
+        try {
+
+            // find an appropriate writer
+            Iterator it = ImageIO.getImageWritersByFormatName("TIF");
+            if (it.hasNext()) {
+                writer = (ImageWriter) it.next();
+            } else {
+                return false;
+            }
+
+            // setup writer
+            ios = ImageIO.createImageOutputStream(tiffFile);
+            writer.setOutput(ios);
+
+            TIFFImageWriteParam writeParam = new TIFFImageWriteParam(
+                    Locale.ENGLISH);
+            writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            writeParam.setCompressionType("LZW");
+
+            // convert to an IIOImage
+            IIOImage iioImage = new IIOImage(image, null, null);
+            writer.write(null, iioImage, writeParam);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+
+    }
+    */
+	
+	
+	
+	
+	
+}
+</java><java name='mil/army/us/imagetool/ImageTool.java'>package mil.army.us.imagetool;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageWriter;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.ImageTypeSpecifier;
+
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NamedNodeMap;
+
+
+
+/**
+ * This class can be used to convert images. Note that all the methods of this
+ * class are declared as static. Supports the following image operations
+ * &lt;ul&gt;
+ * &lt;li&gt;Convert between Image and BufferedImage&lt;/li&gt;
+ * &lt;li&gt;Split images&lt;/li&gt;
+ * &lt;li&gt;Resize image&lt;/li&gt;
+ * &lt;li&gt;Create tiled image&lt;/li&gt;
+ * &lt;li&gt;Create empty transparent image&lt;/li&gt;
+ * &lt;li&gt;Create a colored image&lt;/li&gt;
+ * &lt;li&gt;Flip image horizontally&lt;/li&gt;
+ * &lt;li&gt;Flip image vertically&lt;/li&gt;
+ * &lt;li&gt;Clone image&lt;/li&gt;
+ * &lt;li&gt;Rotate image&lt;/li&gt;
+ * &lt;li&gt;Get Image Resolution&lt;/li&gt;
+ * &lt;li&gt;Get Image Bit Depth&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @author Gregory Washington
+ */
+public class ImageTool {
+
+    public ImageTool() 
+    {
+    }//End default constructor
+
+    /**
+     * Converts a given Image into a BufferedImage
+     *
+     * @param img The Image to be converted
+     * @return The converted BufferedImage
+     */
+    public static BufferedImage toBufferedImage(Image img)
+    {
+        if (img instanceof BufferedImage) {
+            return (BufferedImage) img;
+        }
+        // Create a buffered image with transparency
+        BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        // Draw the image on to the buffered image
+        Graphics2D bGr = bimage.createGraphics();
+        bGr.drawImage(img, 0, 0, null);
+        bGr.dispose();
+        // Return the buffered image
+        return bimage;
+    }//End
+
+    /**
+     * Splits an image into a number of rows and columns
+     *
+     * @param img The image to be split
+     * @param rows The number of rows
+     * @param cols The number of columns
+     * @return The array of split images in the vertical order
+     */
+    public static BufferedImage[] splitImage(Image img, int rows, int cols)
+    {
+        // Determine the width of each part
+        int w = img.getWidth(null) / cols;
+        // Determine the height of each part
+        int h = img.getHeight(null) / rows;
+        // Determine the number of BufferedImages to be created
+        int num = rows * cols;
+        // The count of images we'll use in looping
+        int count = 0;
+        // Create the BufferedImage array
+        BufferedImage[] imgs = new BufferedImage[num];
+        // Start looping and creating images [splitting]
+        for (int x = 0; x &lt; rows; x++) {
+            for (int y = 0; y &lt; cols; y++) {
+                // The BITMASK type allows us to use bmp images with coloured
+                // text and any background
+                imgs[count] = new BufferedImage(w, h, BufferedImage.BITMASK);
+                // Get the Graphics2D object of the split part of the image
+                Graphics2D g = imgs[count++].createGraphics();
+                // Draw only the required portion of the main image on to the
+                // split image
+                g.drawImage(img, 0, 0, w, h, w * y, h * x, w * y + w, h * x + h, null);
+                // Now Dispose the Graphics2D class
+                g.dispose();
+            }
+        }
+        return imgs;
+    }//End
+
+    /**
+     * Converts a given BufferedImage into an Image
+     *
+     * @param bimage The BufferedImage to be converted
+     * @return The converted Image
+     */
+    public static Image toImage(BufferedImage bimage)
+    {
+        // Casting is enough to convert from BufferedImage to Image
+        Image img = (Image) bimage;
+        return img;
+    }//End
+
+    /**
+     * Resizes a given image to given width and height
+     *
+     * @param img The image to be resized
+     * @param width The new width
+     * @param height The new height
+     * @return The resized image
+     */
+    public static Image resize(Image img, int width, int height)
+    {
+        // Create a null image
+        Image image = null;
+        // Resize into a BufferedImage
+        BufferedImage bimg = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D bGr = bimg.createGraphics();
+        bGr.drawImage(img, 0, 0, width, height, null);
+        bGr.dispose();
+        // Convert to Image and return it
+        image = toImage(bimg);
+        return image;
+    }//End
+
+    /**
+     * Creates a tiled image with an image up to given width and height
+     *
+     * @param img The source image
+     * @param width The width of image to be created
+     * @param height The height of the image to be created
+     * @return The created image
+     */
+    public static Image createTiledImage(Image img, int width, int height)
+    {
+        // Create a null image
+        Image image = null;
+        BufferedImage bimg = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        // The width and height of the given image
+        int imageWidth = img.getWidth(null);
+        int imageHeight = img.getHeight(null);
+        // Start the counting
+        int numX = (width / imageWidth) + 2;
+        int numY = (height / imageHeight) + 2;
+        // Create the graphics context
+        Graphics2D bGr = bimg.createGraphics();
+        for (int y = 0; y &lt; numY; y++) {
+            for (int x = 0; x &lt; numX; x++) {
+                bGr.drawImage(img, x * imageWidth, y * imageHeight, null);
+            }
+        }
+        // Convert and return the image
+        image = toImage(bimg);
+        return image;
+    }//End
+
+    /**
+     * Creates an empty image with transparency
+     *
+     * @param width The width of required image
+     * @param height The height of required image
+     * @return The created image
+     */
+    public static Image getEmptyImage(int width, int height)
+    {
+        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        return toImage(img);
+    }//End
+
+    /**
+     * Creates a colored image with a specified color
+     *
+     * @param color The color to be filled with
+     * @param width The width of the required image
+     * @param height The height of the required image
+     * @return The created image
+     */
+    public static Image getColoredImage(Color color, int width, int height)
+    {
+        BufferedImage img = toBufferedImage(getEmptyImage(width, height));
+        Graphics2D g = img.createGraphics();
+        g.setColor(color);
+        g.fillRect(0, 0, width, height);
+        g.dispose();
+        return img;
+    }//End
+
+    /**
+     * Flips an image horizontally. (Mirrors it)
+     *
+     * @param img The source image
+     * @return The image after flip
+     */
+    public static Image flipImageHorizontally(Image img)
+    {
+        int w = img.getWidth(null);
+        int h = img.getHeight(null);
+        BufferedImage bimg = toBufferedImage(getEmptyImage(w, h));
+        Graphics2D g = bimg.createGraphics();
+        g.drawImage(img, 0, 0, w, h, w, 0, 0, h, null);
+        g.dispose();
+        return toImage(bimg);
+    }//End
+
+    /**
+     * Flips an image vertically. (Mirrors it)
+     *
+     * @param img The source image
+     * @return The image after flip
+     */
+    public static Image flipImageVertically(Image img)
+    {
+        int w = img.getWidth(null);
+        int h = img.getHeight(null);
+        BufferedImage bimg = toBufferedImage(getEmptyImage(w, h));
+        Graphics2D g = bimg.createGraphics();
+        g.drawImage(img, 0, 0, w, h, 0, h, w, 0, null);
+        g.dispose();
+        return toImage(bimg);
+    }//End
+
+    /**
+     * Clones an image. After cloning, a copy of the image is returned.
+     *
+     * @param img The image to be cloned
+     * @return The clone of the given image
+     */
+    public static Image clone(Image img)
+    {
+        BufferedImage bimg = toBufferedImage(getEmptyImage(img.getWidth(null), img.getHeight(null)));
+        Graphics2D g = bimg.createGraphics();
+        g.drawImage(img, 0, 0, null);
+        g.dispose();
+        return toImage(bimg);
+    }//End
+
+    /**
+     * Rotates an image. Actually rotates a new copy of the image.
+     *
+     * @param img The image to be rotated
+     * @param angle The angle in degrees
+     * @return The rotated image
+     */
+    public static Image rotate(Image img, double angle)
+    {
+        double sin = Math.abs(Math.sin(Math.toRadians(angle))), cos = Math.abs(Math.cos(Math.toRadians(angle)));
+        int w = img.getWidth(null), h = img.getHeight(null);
+        int neww = (int) Math.floor(w * cos + h * sin), newh = (int) Math.floor(h
+                * cos + w * sin);
+        BufferedImage bimg = toBufferedImage(getEmptyImage(neww, newh));
+        Graphics2D g = bimg.createGraphics();
+        g.translate((neww - w) / 2, (newh - h) / 2);
+        g.rotate(Math.toRadians(angle), w / 2, h / 2);
+        g.drawRenderedImage(toBufferedImage(img), null);
+        g.dispose();
+        return toImage(bimg);
+    }//End
+   
+    /**
+     * Makes a color in an Image transparent.
+     */
+    public static Image mask(Image img, Color color)
+    {
+        BufferedImage bimg = toBufferedImage(getEmptyImage(img.getWidth(null), img.getHeight(null)));
+        Graphics2D g = bimg.createGraphics();
+        g.drawImage(img, 0, 0, null);
+        g.dispose();
+        for (int y=0; y&lt;bimg.getHeight(); y++){
+            for (int x=0; x&lt;bimg.getWidth(); x++){
+                int col = bimg.getRGB(x, y);
+                if (col==color.getRGB()){
+                    bimg.setRGB(x, y, col &amp; 0x00ffffff);
+                }
+            }
+        }
+        return toImage(bimg);
+    }//End
+    
+    public static int getImageResolution(String filePath) throws IOException
+    {
+    	ImageInputStream imageInput = null;
+    	try{
+    		int xDPI= 0;
+    		int yDPI= 0;
+    		int resolution;
+
+    		File f = new File(filePath);   	
+    		imageInput = ImageIO.createImageInputStream(f);
+    		Iterator it = ImageIO.getImageReaders(imageInput);
+    		ImageReader reader = (ImageReader) it.next();
+
+    		reader.setInput(imageInput);
+    		IIOMetadata meta = reader.getImageMetadata(0);
+    		Node n = meta.getAsTree("javax_imageio_1.0");
+    		n = n.getFirstChild();
+
+    		while (n != null) {
+    			if (n.getNodeName().equals("Dimension")) {
+    				Node n2 = n.getFirstChild();
+
+    				while (n2 != null) {
+    					if (n2.getNodeName().equals("HorizontalPixelSize")) {
+    						NamedNodeMap nnm = n2.getAttributes();
+    						Node n3 = nnm.item(0);
+    						float hps = Float.parseFloat(n3.getNodeValue());
+    						xDPI = Math.round(25.4f / hps);
+    					}
+    					if (n2.getNodeName().equals("VerticalPixelSize")) {
+    						NamedNodeMap nnm = n2.getAttributes();
+    						Node n3 = nnm.item(0);
+    						float vps = Float.parseFloat(n3.getNodeValue());
+    						yDPI = Math.round(25.4f / vps);
+    					}
+    					n2 = n2.getNextSibling();
+    				}
+    			}
+    			n = n.getNextSibling();
+    		}
+
+    		if (xDPI == yDPI) {
+    			resolution = xDPI;
+    		} else {
+    			resolution = 0;
+    		}
+    		return resolution;
+    	}finally {
+    		imageInput.close();
+    	}
+    }//End
+    
+    public static int getImageBitDepth(String filePath) throws IOException 
+    {
+    	File f = new File(filePath);
+    	ImageInputStream in = ImageIO.createImageInputStream(f);
+        if(in == null) {
+            throw new IOException("Can't create ImageInputStream!");
+        }
+
+        try{
+            Iterator readers = ImageIO.getImageReaders(in);
+
+            ImageReader reader;
+            if(!readers.hasNext()) {
+                throw new IOException("Can't read image format!");
+            }else {
+                reader = (ImageReader) readers.next();
+            }
+            reader.setInput(in,true,true);
+            System.out.println((reader.getImageTypes(0)));
+            int bitDepth = ((ImageTypeSpecifier)reader.getImageTypes(0).next()).getColorModel().getPixelSize();
+            reader.dispose();
+            return bitDepth;
+        }finally {
+            in.close();
+        }
+    }//End
+
+
+}
+</java><java name='mil/army/us/imagetool/PPTToImage.java'>package mil.army.us.imagetool;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import mil.army.us.PDFBox.Utils.FileUtils;
+
+import org.apache.poi.hslf.model.Slide;
+import org.apache.poi.hslf.usermodel.SlideShow;
+
+
+
+public class PPTToImage {
+	
+	private List  imageFiles;
+	
+	public PPTToImage() {
+		// TODO Auto-generated constructor stub
+		this.imageFiles = new ArrayList();
+	}
+	/**
+	 * Add a source Full path  to the list of image.
+	 *
+	 * @param source Full path of image.
+	 */
+	private void addSource(String  source)
+	{
+		this.imageFiles.add(source);
+	}
+
+	/**
+	 * Get the imageFiles.
+	 * @return Returns the imageFiles List.
+	 */
+	public List  getImageFiles()
+	{
+		return this.imageFiles;
+	}
+	/**
+	 * Receives a ppt file converts it to image files and adds them to list.
+	 * @param filePath
+	 * @param imageType
+	 * @param defaultFolder
+	 * @throws Exception
+	 */
+	public void convertPPTtoImages(String filePath, String imageType, String defaultFolder) throws Exception
+	{
+		/*
+		 *  HSLF provides a way to export slides into images. You can capture slides into
+		 *  java.awt.Graphics2D object (or any other) and serialize it into a PNG or JPEG 
+		 *  format. Please note, although HSLF attempts to render slides as close to PowerPoint 
+		 *  as possible, the output may look differently from PowerPoint due to the following
+		 *  reasons:
+		 *
+	   	 *	Java2D renders fonts differently vs PowerPoint. There are always some differences in the way the font glyphs are painted
+    		HSLF uses java.awt.font.LineBreakMeasurer to break text into lines. PowerPoint may do it in a different way.
+    		If a font from the presentation is not avaiable, then the JDK default font will be used.
+
+			Current Limitations:
+
+	   		Some types of shapes are not yet supported (WordArt, complex auto-shapes)
+  	 		Only Bitmap images (PNG, JPEG, DIB) can be rendered in Java
+
+		 * 
+		 */
+			//String imageFilename =
+			FileInputStream is = new FileInputStream(filePath);
+			SlideShow ppt = new SlideShow(is);
+			is.close();
+			
+			Dimension pgsize = ppt.getPageSize();
+			String filePrefix = FileUtils.getFileNameNoExtention(filePath);
+			Slide[] slide = ppt.getSlides();
+			for (int i = 0; i &lt; slide.length; i++) {
+
+				BufferedImage img = new BufferedImage(pgsize.width, pgsize.height, BufferedImage.TYPE_INT_RGB);
+				Graphics2D graphics = img.createGraphics();
+				//clear the drawing area
+				graphics.setPaint(Color.white);
+				graphics.fill(new Rectangle2D.Float(0, 0, pgsize.width, pgsize.height));
+
+				//render
+				slide[i].draw(graphics);
+
+				//save the output
+				FileOutputStream out;
+				if(imageType.equalsIgnoreCase("png"))
+				{
+					out = new FileOutputStream(defaultFolder + "\\" + filePrefix + "Slide-"  + (i+1) + ".png");
+					javax.imageio.ImageIO.write(img, "png", out);
+					addSource(defaultFolder + "\\" + filePrefix + "Slide-"+ (i+1)  + ".png");
+				}else{
+					out = new FileOutputStream(defaultFolder + "\\" + filePrefix + "Slide-"+ (i+1)  + ".jpg");
+					javax.imageio.ImageIO.write(img, "jpeg", out);
+					addSource(defaultFolder + "\\" + filePrefix + "Slide-"+ (i+1)  + ".jpg");
+				}
+				out.close();
+			}
+		
+	}
+
+}
+</java><java name='mil/army/us/imagetool/PPTXToImage.java'>package mil.army.us.imagetool;
+
+
+/*
+ *  ====================================================================
+ *    Licensed to the Apache Software Foundation (ASF) under one or more
+ *    contributor license agreements.  See the NOTICE file distributed with
+ *    this work for additional information regarding copyright ownership.
+ *    The ASF licenses this file to You under the Apache License, Version 2.0
+ *    (the "License"); you may not use this file except in compliance with
+ *    the License.  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * ====================================================================
+ */
+
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFSlide;
+
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.FileOutputStream;
+
+public class PPTXToImage {
+
+	public PPTXToImage() {
+		
+		// TODO Auto-generated constructor stub
+	}
+	
+	static void usage(){
+        System.out.println("Usage: PPTX2PNG [options] &lt;pptx file&gt;");
+        System.out.println("Options:");
+        System.out.println("    -scale &lt;float&gt;   scale factor");
+        System.out.println("    -slide &lt;integer&gt; 1-based index of a slide to render");
+    }
+	
+	public static void convertPPTXtoPDF(String[] args)throws Exception
+	{
+		if (args.length == 0) {
+            usage();
+            return;
+        }
+
+        int slidenum = -1;
+        float scale = 1;
+        String file = null;
+
+        for (int i = 0; i &lt; args.length; i++) {
+            if (args[i].startsWith("-")) {
+                if ("-scale".equals(args[i])) {
+                    scale = Float.parseFloat(args[++i]);
+                } else if ("-slide".equals(args[i])) {
+                    slidenum = Integer.parseInt(args[++i]);
+                }
+            } else {
+                file = args[i];
+            }
+        }
+
+        if(file == null){
+            usage();
+            return;
+        }
+
+        System.out.println("Processing " + file);
+        XMLSlideShow ppt = new XMLSlideShow(OPCPackage.open(file));
+
+        Dimension pgsize = ppt.getPageSize();
+        int width = (int) (pgsize.width * scale);
+        int height = (int) (pgsize.height * scale);
+
+        XSLFSlide[] slide = ppt.getSlides();
+        for (int i = 0; i &lt; slide.length; i++) {
+            if (slidenum != -1 &amp;&amp; slidenum != (i + 1)) continue;
+
+            String title = slide[i].getTitle();
+            System.out.println("Rendering slide " + (i + 1) + (title == null ? "" : ": " + title));
+
+            BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = img.createGraphics();
+
+            // default rendering options
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            graphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+
+            graphics.setColor(Color.white);
+            graphics.clearRect(0, 0, width, height);
+
+            graphics.scale(scale, scale);
+
+            // draw stuff
+            slide[i].draw(graphics);
+
+            // save the result
+            int sep = file.lastIndexOf(".");
+            String fname = file.substring(0, sep == -1 ? file.length() : sep) + "-" + (i + 1) +".png";
+            FileOutputStream out = new FileOutputStream(fname);
+            ImageIO.write(img, "png", out);
+            out.close();
+        }
+        System.out.println("Done");
+	}
+
+}
+</java><java name='org/pdf/Util/PDFMergerUtility.java'>package org.pdf.Util;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.File ;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException ;
+import java.util.ArrayList ;
+import java.util.HashMap ;
+import java.util.Iterator ;
+import java.util.List ;
+import java.util.Map ;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSInteger;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.exceptions.COSVisitorException;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.PDDocumentNameDictionary;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.COSArrayList;
+import org.apache.pdfbox.pdmodel.common.COSObjectable;
+import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDFieldFactory;
+
+import org.apache.poi.hslf.model.Slide;
+import org.apache.poi.hslf.usermodel.SlideShow;
+
+
+/**
+ * This class will take a list of pdf documents and merge them, saving the result
+ * in a new document.
+ *
+ * @author &lt;a HREF="mailto:ben@benlitchfield.com"&gt;Ben Litchfield&lt;/a&gt;
+ * @version $Revision: 1.2 $
+ */
+public class PDFMergerUtility
+{
+
+	private List  sources;
+	private String  destinationFileName;
+
+	/**
+	 * Instantiate a new PDFMergerUtility.
+	 */
+	public PDFMergerUtility()
+	{
+		sources = new ArrayList ();
+	}
+	/**
+	 * Get the name of the destination file.
+	 * @return Returns the destination.
+	 */
+	public String  getDestinationFileName()
+	{
+		return destinationFileName;
+	}
+
+	/**
+	 * Set the name of the destination file.
+	 * @param destination
+	 * The destination to set.
+	 */
+	public void setDestinationFileName(String  destination)
+	{
+		this.destinationFileName = destination;
+	}
+
+	/**
+	 * Add a source file to the list of files to merge.
+	 *
+	 * @param source Full path and file name of source document.
+	 */
+	public void addSource(String  source)
+	{
+		sources.add(new File (source));
+	}
+
+	/**
+	 * Add a source file to the list of files to mere.
+	 *
+	 * @param source File representing source document
+	 */
+	public void addSource(File  source)
+	{
+		sources.add(source);
+	}
+
+	/**
+	 * Merge the list of source documents, saving the result in the destination file.
+	 *
+	 * @throws IOException If there is an error saving the document.
+	 * @throws COSVisitorException If an error occurs while saving the destination file.
+	 */
+	public void mergeDocuments() throws IOException , COSVisitorException
+	{
+		PDDocument destination = null;
+		File  sourceFile;
+		PDDocument source;
+		if (sources != null &amp;&amp; sources.size() &gt; 0)
+		{
+			try
+			{
+				Iterator  sit = sources.iterator();
+				sourceFile = (File ) sit.next();
+				destination = PDDocument.load(sourceFile);
+				while (sit.hasNext())
+				{
+					sourceFile = (File ) sit.next();
+					source = PDDocument.load(sourceFile);
+					try
+					{
+						appendDocument(destination, source);
+					}
+					finally
+					{
+						if (source != null)
+						{
+							source.close();
+						}
+					}
+				}
+				destination.save(destinationFileName);
+			}
+			finally
+			{
+				if (destination != null)
+				{
+					destination.close();
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * append all pages from source to destination.
+	 *
+	 * @param destination the document to receive the pages
+	 * @param source the document originating the new pages
+	 *
+	 * @throws IOException If there is an error accessing data from either document.
+	 */
+	public void appendDocument(PDDocument destination, PDDocument source) throws IOException 
+	{
+		if( destination.isEncrypted() )
+		{
+			throw new IOException ( "Error: destination PDF is encrypted, can't append encrypted PDF documents." );
+		}
+		if( source.isEncrypted() )
+		{
+			throw new IOException ( "Error: source PDF is encrypted, can't append encrypted PDF documents." );
+		}
+		PDDocumentInformation destInfo = destination.getDocumentInformation();
+		PDDocumentInformation srcInfo = source.getDocumentInformation();
+		destInfo.getDictionary().mergeInto( srcInfo.getDictionary() );
+
+		PDDocumentCatalog destCatalog = destination.getDocumentCatalog();
+		PDDocumentCatalog srcCatalog = source.getDocumentCatalog();
+
+		if( destCatalog.getOpenAction() == null )
+		{
+			destCatalog.setOpenAction( srcCatalog.getOpenAction() );
+		}
+
+		PDAcroForm destAcroForm = destCatalog.getAcroForm();
+		PDAcroForm srcAcroForm = srcCatalog.getAcroForm();
+		if( destAcroForm == null )
+		{
+			cloneForNewDocument( destination, srcAcroForm );
+			destCatalog.setAcroForm( srcAcroForm );
+		}
+		else
+		{
+			mergeAcroForm(destination, destAcroForm, srcAcroForm);
+		}
+
+		COSArray destThreads = (COSArray)destCatalog.getCOSDictionary().getDictionaryObject(
+				COSName.getPDFName( "Threads" ));
+		COSArray srcThreads = (COSArray)cloneForNewDocument(
+				destination,
+				destCatalog.getCOSDictionary().getDictionaryObject( COSName.getPDFName( "Threads" )));
+		if( destThreads == null )
+		{
+			destCatalog.getCOSDictionary().setItem( COSName.getPDFName( "Threads" ), srcThreads );
+		}
+		else
+		{
+			destThreads.addAll( srcThreads );
+		}
+
+		COSName names = COSName.getPDFName( "Names" );
+		PDDocumentNameDictionary destNames = destCatalog.getNames();
+		PDDocumentNameDictionary srcNames = srcCatalog.getNames();
+		if( srcNames != null )
+		{
+			if( destNames == null )
+			{
+				destCatalog.getCOSDictionary().setItem( names, cloneForNewDocument( destination, srcNames ) );
+			}
+			else
+			{
+				//warning, potential for collision here!!
+				destNames.getCOSDictionary().mergeInto( (COSDictionary)cloneForNewDocument( destination, srcNames ) );
+			}
+		}
+
+		PDDocumentOutline destOutline = destCatalog.getDocumentOutline();
+		PDDocumentOutline srcOutline = srcCatalog.getDocumentOutline();
+		if( srcOutline != null )
+		{
+			if( destOutline == null )
+			{
+				PDDocumentOutline cloned =
+					new PDDocumentOutline( (COSDictionary)cloneForNewDocument( destination, srcOutline ) );
+				destCatalog.setDocumentOutline( cloned );
+			}
+			else
+			{
+				PDOutlineItem first = srcOutline.getFirstChild();
+				PDOutlineItem clonedFirst = new PDOutlineItem( (COSDictionary)cloneForNewDocument(
+						destination, first ));
+				destOutline.appendChild( clonedFirst );
+			}
+		}
+
+		String  destPageMode = destCatalog.getPageMode();
+		String  srcPageMode = srcCatalog.getPageMode();
+		if( destPageMode == null )
+		{
+			destCatalog.setPageMode( srcPageMode );
+		}
+
+		COSName pageLabels = COSName.getPDFName( "PageLabels" );
+		COSDictionary destLabels = (COSDictionary)destCatalog.getCOSDictionary().getDictionaryObject( pageLabels );
+		COSDictionary srcLabels = (COSDictionary)srcCatalog.getCOSDictionary().getDictionaryObject( pageLabels );
+		if( srcLabels != null )
+		{
+			int destPageCount = destination.getNumberOfPages();
+			COSArray destNums = null;
+			if( destLabels == null )
+			{
+				destLabels = new COSDictionary();
+				destNums = new COSArray();
+				destLabels.setItem( COSName.getPDFName( "Nums" ), destNums );
+				destCatalog.getCOSDictionary().setItem( pageLabels, destLabels );
+			}
+			else
+			{
+				destNums = (COSArray)destLabels.getDictionaryObject( COSName.getPDFName( "Nums" ) );
+			}
+			COSArray srcNums = (COSArray)srcLabels.getDictionaryObject( COSName.getPDFName( "Nums" ) );
+			for( int i=0; i&lt;srcNums.size(); i+=2 )
+			{
+				COSNumber labelIndex = (COSNumber)srcNums.getObject( i );
+				long labelIndexValue = labelIndex.intValue();
+				destNums.add( COSInteger.get( labelIndexValue + destPageCount ) );
+				destNums.add( cloneForNewDocument( destination, srcNums.getObject( i+1 ) ) );
+			}
+		}
+
+		COSName metadata = COSName.getPDFName( "Metadata" );
+		COSStream destMetadata = (COSStream)destCatalog.getCOSDictionary().getDictionaryObject( metadata );
+		COSStream srcMetadata = (COSStream)srcCatalog.getCOSDictionary().getDictionaryObject( metadata );
+		if( destMetadata == null &amp;&amp; srcMetadata != null )
+		{
+			PDStream newStream = new PDStream( destination, srcMetadata.getUnfilteredStream(), false );
+			newStream.getStream().mergeInto( srcMetadata );
+			newStream.addCompression();
+			destCatalog.getCOSDictionary().setItem( metadata, newStream );
+		}
+
+		//finally append the pages
+		List  pages = source.getDocumentCatalog().getAllPages();
+		Iterator  pageIter = pages.iterator();
+		while( pageIter.hasNext() )
+		{
+			PDPage page = (PDPage)pageIter.next();
+			PDPage newPage =
+				new PDPage( (COSDictionary)cloneForNewDocument( destination, page.getCOSDictionary() ) );
+			destination.addPage( newPage );
+		}
+	}
+	Map  clonedVersion = new HashMap ();
+
+	private COSBase cloneForNewDocument( PDDocument destination, Object  base ) throws IOException 
+	{
+		if( base == null )
+		{
+			return null;
+		}
+		COSBase retval = (COSBase)clonedVersion.get( base );
+		if( retval != null )
+		{
+			//we are done, it has already been converted.
+		}
+		else if( base instanceof List  )
+		{
+			COSArray array = new COSArray();
+			List  list = (List )base;
+			for( int i=0; i&lt;list.size(); i++ )
+			{
+				array.add( cloneForNewDocument( destination, list.get( i ) ) );
+			}
+			retval = array;
+		}
+		else if( base instanceof COSObjectable &amp;&amp; !(base instanceof COSBase) )
+		{
+			retval = cloneForNewDocument( destination, ((COSObjectable)base).getCOSObject() );
+			clonedVersion.put( base, retval );
+		}
+		else if( base instanceof COSObject )
+		{
+			COSObject object = (COSObject)base;
+			retval = cloneForNewDocument( destination, object.getObject() );
+			clonedVersion.put( base, retval );
+		}
+		else if( base instanceof COSArray )
+		{
+			COSArray newArray = new COSArray();
+			COSArray array = (COSArray)base;
+			for( int i=0; i&lt;array.size(); i++ )
+			{
+				newArray.add( cloneForNewDocument( destination, array.get( i ) ) );
+			}
+			retval = newArray;
+			clonedVersion.put( base, retval );
+		}
+		else if( base instanceof COSStream )
+		{
+			COSStream originalStream = (COSStream)base;
+			List  keys = (List) originalStream.entrySet(); // Changed from deprcated keyList
+			PDStream stream = new PDStream( destination, originalStream.getFilteredStream(), true );
+			clonedVersion.put( base, stream.getStream() );
+			for( int i=0; i&lt;keys.size(); i++ )
+			{
+				COSName key = (COSName)keys.get( i );
+				stream.getStream().setItem( key, cloneForNewDocument(destination,originalStream.getItem(key)));
+			}
+			retval = stream.getStream();
+		}
+		else if( base instanceof COSDictionary )
+		{
+			COSDictionary dic = (COSDictionary)base;
+			List  keys = (List) dic.entrySet();
+			retval = new COSDictionary();
+			clonedVersion.put( base, retval );
+			for( int i=0; i&lt;keys.size(); i++ )
+			{
+				COSName key = (COSName)keys.get( i );
+				((COSDictionary)retval).setItem( key, cloneForNewDocument(destination,dic.getItem(key)));
+			}
+		}
+		else
+		{
+			retval = (COSBase)base;
+		}
+		clonedVersion.put( base, retval );
+		return retval;
+	}
+
+	private int nextFieldNum = 1;
+
+	/**
+	 * Merge the contents of the source form into the destination form
+	 * for the destination file.
+	 *
+	 * @param destination the destination document
+	 * @param destAcroForm the destination form
+	 * @param srcAcroForm the source form
+	 * @throws IOException If an error occurs while adding the field.
+	 */
+	private void mergeAcroForm(PDDocument destination, PDAcroForm destAcroForm, PDAcroForm srcAcroForm)
+	throws IOException 
+	{
+		List  destFields = destAcroForm.getFields();
+		List  srcFields = srcAcroForm.getFields();
+		if( srcFields != null )
+		{
+			if( destFields == null )
+			{
+				destFields = new COSArrayList();
+				destAcroForm.setFields( destFields );
+			}
+			Iterator  srcFieldsIterator = srcFields.iterator();
+			while (srcFieldsIterator.hasNext())
+			{
+				PDField srcField = (PDField)srcFieldsIterator.next();
+				PDField destField =
+					PDFieldFactory.createField(
+							destAcroForm,
+							(COSDictionary)cloneForNewDocument(destination, srcField.getDictionary() ));
+				// if the form already has a field with this name then we need to rename this field
+				// to prevent merge conflicts.
+				if ( destAcroForm.getField(destField.getFullyQualifiedName()) != null )
+				{
+					destField.setPartialName("dummyFieldName"+(nextFieldNum++));
+				}
+				destFields.add(destField);
+			}
+		}
+	}
+	
+	
+
+	
+}
+
+
+</java></javaproject></code>
+<item name='$FlagsExt'><text>DE</text></item>
+<item name='$JavaCompilerSource'><text>1.3</text></item>
+<item name='$JavaCompilerTarget'><text>1.2</text></item></scriptlibrary>
+

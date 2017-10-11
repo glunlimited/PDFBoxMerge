@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE agent SYSTEM 'xmlschemas/domino_9_0_1.dtd'>
+<agent name='MergePDF' xmlns='http://www.lotus.com/dxl' version='9.0' maintenanceversion='1.0'
+ replicaid='85257CB50072A923' hide='v3' publicaccess='false' designerversion='8.5.3'>
+<noteinfo noteid='166' unid='15FDC242B4ECE8CF85257C9200500D15' sequence='2'>
+<created><datetime>20140305T093422,29-05</datetime></created>
+<modified><datetime dst='true'>20140411T134541,29-04</datetime></modified>
+<revised><datetime dst='true'>20140411T134541,28-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140411T134541,29-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,47-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby>
+<designchange><datetime dst='true'>20140411T134541,18-04</datetime></designchange>
+<trigger type='actionsmenu'/>
+<documentset type='runonce'/><code event='options'><lotusscript>%REM
+	Agent MergePDF
+	Created Feb 27, 2014 by Gregory L Washington/AJ/ARMYJAGC
+	Description: Comments for Agent
+%END REM
+Option Public
+Option Declare
+Use "AcrobatInterface"
+
+</lotusscript></code><code event='initialize'><lotusscript>Sub Initialize
+	Dim sourceFilePathA As String
+	Dim sourceFilePathB As String
+	Dim targetFilePath As String
+	Dim iErr As Integer
+	
+	sourceFilePathA = "C:\Users\washingtongl\Documents\Temp\ls-Web_site_add.pdf"
+	sourceFilePathB = "C:\Users\washingtongl\Documents\Temp\ls-Web_site_rul.pdf"
+	targetFilePath = "C:\Users\washingtongl\Documents\Temp\merged.pdf"
+	
+	
+	
+	
+	If doesFileExist(sourceFilePathA) And doesFileExist(sourceFilePathB) Then
+		iErr = MergePDFs(sourceFilePathA, sourceFilePathB, targetFilePath, True)
+		If iErr &gt;= 0 Then
+			Error iErr, "Could not append file"
+		End If
+	Else
+		'Call me.copyFile(sourceFilePath, targetFilePath)
+	End If 
+	
+End Sub</lotusscript></code>
+<rundata processeddocs='0' exitcode='0' agentdata='C28A3F46763E7E9685257C8C005D8632'>
+<agentmodified><datetime>20140227T120100,75-05</datetime></agentmodified>
+<agentrun><datetime>20140227T120229,97-05</datetime></agentrun>
+<runlog>Started running agent 'MergePDF' on 02/27/2014 12:01:31 PM
+Ran LotusScript code
+Done running agent 'MergePDF' on 02/27/2014 12:02:29 PM
+</runlog></rundata></agent>
+

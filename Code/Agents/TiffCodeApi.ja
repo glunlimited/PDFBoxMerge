@@ -1,0 +1,206 @@
+<?xml version='1.0' encoding='utf-8'?>
+<agent name='TiffCodeApi' xmlns='http://www.lotus.com/dxl' version='9.0' maintenanceversion='1.0'
+ replicaid='85257CB50072A923' hide='v3' publicaccess='false' designerversion='8.5.3'>
+<noteinfo noteid='22a' unid='078C511877286E5685257CB3004E9C92' sequence='9'>
+<created><datetime dst='true'>20140407T101838,90-04</datetime></created>
+<modified><datetime dst='true'>20140411T134541,45-04</datetime></modified>
+<revised><datetime dst='true'>20140411T134541,44-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140411T134541,45-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,87-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby>
+<designchange><datetime dst='true'>20140411T134541,24-04</datetime></designchange>
+<trigger type='actionsmenu'/>
+<documentset type='runonce'/><code event='action'><javaproject class='JavaAgent.class'
+ codepath='c:\Program Files (x86)\IBM\Lotus\Notes\Data'><java name='JavaAgent.java'>import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+
+import java.io.FileInputStream;
+import java.rmi.AccessException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+
+import com.ibm.jvm.util.ByteArrayOutputStream;
+import com.sun.media.jai.codec.ByteArraySeekableStream;
+import com.sun.media.jai.codec.ImageCodec;
+import com.sun.media.jai.codec.ImageDecoder;
+import com.sun.media.jai.codec.ImageEncoder;
+import com.sun.media.jai.codec.TIFFDecodeParam;
+import com.sun.media.jai.codec.TIFFEncodeParam;
+
+//import org.apache.log4j.          .db.DBHelper;
+
+import lotus.domino.*;
+
+public class JavaAgent extends AgentBase {
+
+    public void NotesMain() {
+
+      try {
+          Session session = getSession();
+          AgentContext agentContext = session.getAgentContext();
+
+          // (Your code goes here)
+          String fileName = "C:\\Users\\washingtongl\\Documents\\Temp\\Source\\Page_002.tif";
+          File file = new File(fileName) ;
+          byte[] fileData = new byte[(int) file.length()];
+          try {
+              new FileInputStream(file).read(fileData);
+          } catch (Exception e) {
+        	    e.printStackTrace();
+          }    
+          ByteArraySeekableStream ss = new ByteArraySeekableStream(fileData);
+          //ImageEncoder ec = ImageCodec.createImageEncoder("tiff", ss, null);
+          ImageDecoder dec = ImageCodec.createImageDecoder("tiff", ss, null);
+          int count = dec.getNumPages();
+      
+          System.out.println("Count: " + count);
+          TIFFEncodeParam param = new TIFFEncodeParam();
+          System.out.println("Param: " + param.toString());
+          param.setCompression(TIFFEncodeParam.COMPRESSION_GROUP4);
+          param.setDeflateLevel(1);
+          param.setLittleEndian(false);
+          RenderedImage page = dec.decodeAsRenderedImage(0);
+          File dfile = new File("C:\\Users\\washingtongl\\Documents\\Temp\\Destination\\image1.tiff");
+          ImageIO.write(page,"tiff",dfile); // Here on this line it is throwing exception&lt;/b&gt;+
+
+      } catch(Exception e) {
+          e.printStackTrace();
+       }
+   }
+    
+    /* This is a helper class that takes a tiff byte stream path and
+    page ranges and returns a byte array for every page range */
+    public static List splitTiff(byte[] bytes, List pageRanges) throws AccessException, Exception {
+    long startTime = System.currentTimeMillis();
+
+    final String methodName = "splitTiff";
+   // DbHelper dbh = new DbHelper(logger, CLASS_NAME, methodName);
+
+    List splittedDocBytes = new ArrayList();
+
+    //dbh.logMessage("Instantiating tiff decoder");
+    RenderedImage image;
+    TIFFDecodeParam param = new TIFFDecodeParam();
+    ImageDecoder decoder = ImageCodec.createImageDecoder("TIFF", new ByteArrayInputStream(bytes), param);
+    int pageCount = decoder.getNumPages();
+    //dbh.logMessage("PageCount="+pageCount);
+
+    if ( pageRanges != null &amp;&amp; pageCount &gt; 0 ) {
+    List docPageRange;
+    int startPage = -1;
+    int endPage = -1;
+    int docCount = 0;
+
+    for (Iterator iter = pageRanges.iterator(); iter.hasNext(); ++docCount) {
+    docPageRange = (List)iter.next();
+    startPage = ((Integer)docPageRange.get(0)).intValue();
+    endPage = ((Integer)docPageRange.get(1)).intValue();
+
+   // dbh.logMessage("Document "+docCount +" - startpage=" + startPage + " - endpage=" + endPage);
+
+    if ( startPage &lt; 0 || startPage &gt; pageCount || endPage &lt; 0 || endPage &gt; pageCount ){
+    throw new AppException(2201,AppException.ERROR,CLASS_NAME,methodName);
+    }
+
+    /* swap start &amp; end pages if they are swapped */
+    if ( startPage &gt; endPage ){
+    //dbh.logMessage("swapping the start &amp; end pages");
+    int temp = startPage;
+    startPage = endPage;
+    endPage = temp;
+    }
+
+    //dbh.logMessage("extracting the page as rendered images from main document");
+    List pages = new ArrayList((endPage-startPage+1));
+    for (int pageIndex = startPage; pageIndex &lt;= endPage; ++pageIndex) {
+   // dbh.logMessage("pageIndex="+pageIndex);
+    image = decoder.decodeAsRenderedImage((pageIndex-1));
+    pages.add(image);
+    }
+
+   // dbh.logMessage("getting the binary data of rendered images...");
+    byte[] pageBytes = getBytesForMultiPageTIFF(pages, dbh);
+
+    dbh.logMessage("adding binary data to return list...");
+    splittedDocBytes.add(pageBytes);
+    }
+    }
+
+    long endTime = System.currentTimeMillis();
+    dbh.logMessage("Time taken (ms):" + (endTime-startTime));
+
+    return splittedDocBytes;
+    }
+
+    /* It converts vector of buffered images to multi Page Tiff image and
+    * returns the byte array out of it. */
+    private static byte[] getBytesForMultiPageTIFF(List images, DbHelper dbh) throws IOException {
+    long startTime = System.currentTimeMillis();
+
+    final String methodName = "getBytesForMultiPageTIFF";
+    dbh.setMethodName(methodName);
+
+    byte[] bytes = new byte[0];
+
+    /* check if there are any images?? */
+    if (images.size() &lt; 1)
+    return bytes;
+
+    /*Get the first page and remove it from list*/
+    dbh.logMessage("Getting the first rendered page/image");
+    RenderedImage firstImage = (RenderedImage) images.get(0);
+    images.remove(0);
+
+    ByteArrayOutputStream out = null;
+
+    try {
+    /* We need to capture the data in byte array */
+    dbh.logMessage("instantiating byte-array-outputstream to write binary data of images");
+    out = new ByteArrayOutputStream();
+
+    /*Use tiffencoder and write the data to byte array output stream. */
+    dbh.logMessage("instantiating tiff encoder to encode binary data");
+    TIFFEncodeParam param = new TIFFEncodeParam();
+    param.setCompression(TIFFEncodeParam.COMPRESSION_GROUP4);
+    ImageEncoder encoder = ImageCodec.createImageEncoder("TIFF", out, param);
+
+    /*Set the pages other than first page*/
+    dbh.logMessage("setting all the pages to be written other than first-page");
+    if (images.size() &gt; 0) {
+    param.setExtraImages(images.iterator());
+    }
+
+    /*Encode the first image.*/
+    dbh.logMessage("encode first page");
+
+    /*THIS IS THE CULPRIT &amp; TAKING MORE TIME.*/
+    encoder.encode(firstImage);
+
+    /* Get the data in bytes */
+    dbh.logMessage("get the data in bytes");
+    bytes = out.toByteArray();
+
+    } catch (IOException ex) {
+    throw ex;
+    }
+    finally{
+    if ( null != out ){
+    out.close();
+    }
+    }
+
+    long endTime = System.currentTimeMillis();
+    dbh.logMessage("Time taken (ms):" + (endTime-startTime));
+    return bytes;
+    }
+}</java></javaproject></code>
+<rundata processeddocs='0' exitcode='0'>
+<agentmodified><datetime dst='true'>20140407T162440,93-04</datetime></agentmodified></rundata>
+<item name='$JavaCompilerSource'><text>1.3</text></item>
+<item name='$JavaCompilerTarget'><text>1.2</text></item></agent>
+

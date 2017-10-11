@@ -1,0 +1,296 @@
+<?xml version='1.0' encoding='utf-8'?>
+<scriptlibrary name='JODConverter' xmlns='http://www.lotus.com/dxl' version='9.0'
+ maintenanceversion='1.0' replicaid='85257CB50072A923' hide='v3 v4strict'
+ designerversion='8.5.3'>
+<noteinfo noteid='27a' unid='46B7FD39279E650B85257CB7005F9E98' sequence='4'>
+<created><datetime dst='true'>20140411T132425,20-04</datetime></created>
+<modified><datetime dst='true'>20140411T140650,44-04</datetime></modified>
+<revised><datetime dst='true'>20140411T140650,43-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140411T140650,44-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140411T132425,21-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Admin Glunlimited/O=Development</name></updatedby><code
+ event='library'><javaproject class='JavaAgent.class' codepath='c:\Program Files (x86)\IBM\Lotus\Notes\Data'><java
+ name='Untitled.java'>public class Untitled { 
+}</java><java name='mil/army/us/jod/AbstractConversionTask.java'>package mil.army.us.jod;
+
+import static org.artofsolving.jodconverter.office.OfficeUtils.SERVICE_DESKTOP;
+import static org.artofsolving.jodconverter.office.OfficeUtils.cast;
+import static org.artofsolving.jodconverter.office.OfficeUtils.toUnoProperties;
+import static org.artofsolving.jodconverter.office.OfficeUtils.toUrl;
+
+import java.io.File;
+import java.util.Map;
+
+import org.artofsolving.jodconverter.office.OfficeContext;
+import org.artofsolving.jodconverter.office.OfficeException;
+import org.artofsolving.jodconverter.office.OfficeTask;
+
+import com.sun.star.frame.XComponentLoader;
+import com.sun.star.frame.XStorable;
+import com.sun.star.io.IOException;
+import com.sun.star.lang.IllegalArgumentException;
+import com.sun.star.lang.XComponent;
+import com.sun.star.task.ErrorCodeIOException;
+import com.sun.star.util.CloseVetoException;
+import com.sun.star.util.XCloseable;
+
+public abstract class AbstractConversionTask implements OfficeTask {
+
+    private final File inputFile;
+    private final File outputFile;
+
+    public AbstractConversionTask(File inputFile, File outputFile) {
+        this.inputFile = inputFile;
+        this.outputFile = outputFile;
+    }
+
+    protected abstract Map&lt;String,?&gt; getLoadProperties(File inputFile);
+
+    protected abstract Map&lt;String,?&gt; getStoreProperties(File outputFile, XComponent document);
+
+    public void execute(OfficeContext context) throws OfficeException {
+        XComponent document = null;
+        try {
+            document = loadDocument(context, inputFile);
+            modifyDocument(document);
+            storeDocument(document, outputFile);
+        } catch (OfficeException officeException) {
+            throw officeException;
+        } catch (Exception exception) {
+            throw new OfficeException("conversion failed", exception);
+        } finally {
+            if (document != null) {
+                XCloseable closeable = cast(XCloseable.class, document);
+                if (closeable != null) {
+                    try {
+                        closeable.close(true);
+                    } catch (CloseVetoException closeVetoException) {
+                        // whoever raised the veto should close the document
+                    }
+                } else {
+                    document.dispose();
+                }
+            }
+        }
+    }
+
+    private XComponent loadDocument(OfficeContext context, File inputFile) throws OfficeException {
+        if (!inputFile.exists()) {
+            throw new OfficeException("input document not found");
+        }
+        XComponentLoader loader = cast(XComponentLoader.class, context.getService(SERVICE_DESKTOP));
+        Map&lt;String,?&gt; loadProperties = getLoadProperties(inputFile);
+        XComponent document = null;
+        try {
+            document = loader.loadComponentFromURL(toUrl(inputFile), "_blank", 0, toUnoProperties(loadProperties));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new OfficeException("could not load document: " + inputFile.getName(), illegalArgumentException);
+        } catch (ErrorCodeIOException errorCodeIOException) {
+            throw new OfficeException("could not load document: "  + inputFile.getName() + "; errorCode: " + errorCodeIOException.ErrCode, errorCodeIOException);
+        } catch (IOException ioException) {
+            throw new OfficeException("could not load document: "  + inputFile.getName(), ioException);
+        }
+        if (document == null) {
+            throw new OfficeException("could not load document: "  + inputFile.getName());
+        }
+        return document;
+    }
+
+    /**
+     * Override to modify the document after it has been loaded and before it gets
+     * saved in the new format.
+     * &lt;p&gt;
+     * Does nothing by default.
+     * 
+     * @param document
+     * @throws OfficeException
+     */
+    protected void modifyDocument(XComponent document) throws OfficeException {
+    	// noop
+    }
+
+    private void storeDocument(XComponent document, File outputFile) throws OfficeException {
+        Map&lt;String,?&gt; storeProperties = getStoreProperties(outputFile, document);
+        if (storeProperties == null) {
+            throw new OfficeException("unsupported conversion");
+        }
+        try {
+            cast(XStorable.class, document).storeToURL(toUrl(outputFile), toUnoProperties(storeProperties));
+        } catch (ErrorCodeIOException errorCodeIOException) {
+            throw new OfficeException("could not store document: " + outputFile.getName() + "; errorCode: " + errorCodeIOException.ErrCode, errorCodeIOException);
+        } catch (IOException ioException) {
+            throw new OfficeException("could not store document: " + outputFile.getName(), ioException);
+        }
+    }
+
+}
+</java><java name='mil/army/us/jod/JODConverter.java'>package mil.army.us.jod;
+
+public class JODConverter {
+
+}
+</java><java name='mil/army/us/jod/OfficeDocumentConverter.java'>package mil.army.us.jod;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.io.FilenameUtils;
+import org.artofsolving.jodconverter.StandardConversionTask;
+import org.artofsolving.jodconverter.document.DefaultDocumentFormatRegistry;
+import org.artofsolving.jodconverter.document.DocumentFormat;
+import org.artofsolving.jodconverter.document.DocumentFormatRegistry;
+import org.artofsolving.jodconverter.office.OfficeException;
+import org.artofsolving.jodconverter.office.OfficeManager;
+
+import com.sun.star.document.UpdateDocMode;
+
+public class OfficeDocumentConverter {
+
+    private final OfficeManager officeManager;
+    private final DocumentFormatRegistry formatRegistry;
+
+    private Map&lt;String,?&gt; defaultLoadProperties = createDefaultLoadProperties();
+
+    public OfficeDocumentConverter(OfficeManager officeManager) {
+        this(officeManager, new DefaultDocumentFormatRegistry());
+    }
+
+    public OfficeDocumentConverter(OfficeManager officeManager, DocumentFormatRegistry formatRegistry) {
+        this.officeManager = officeManager;
+        this.formatRegistry = formatRegistry;
+    }
+
+    private Map&lt;String,Object&gt; createDefaultLoadProperties() {
+        Map&lt;String,Object&gt; loadProperties = new HashMap&lt;String,Object&gt;();
+        loadProperties.put("Hidden", true);
+        loadProperties.put("ReadOnly", true);
+        loadProperties.put("UpdateDocMode", UpdateDocMode.QUIET_UPDATE);
+        return loadProperties;
+    }
+
+    public void setDefaultLoadProperties(Map&lt;String, ?&gt; defaultLoadProperties) {
+        this.defaultLoadProperties = defaultLoadProperties;
+    }
+
+    public DocumentFormatRegistry getFormatRegistry() {
+        return formatRegistry;
+    }
+
+    public void convert(File inputFile, File outputFile) throws OfficeException {
+        String outputExtension = FilenameUtils.getExtension(outputFile.getName());
+        DocumentFormat outputFormat = formatRegistry.getFormatByExtension(outputExtension);
+        convert(inputFile, outputFile, outputFormat);
+    }
+
+    public void convert(File inputFile, File outputFile, DocumentFormat outputFormat) throws OfficeException {
+        String inputExtension = FilenameUtils.getExtension(inputFile.getName());
+        DocumentFormat inputFormat = formatRegistry.getFormatByExtension(inputExtension);
+        StandardConversionTask conversionTask = new StandardConversionTask(inputFile, outputFile, outputFormat);
+        conversionTask.setDefaultLoadProperties(defaultLoadProperties);
+        conversionTask.setInputFormat(inputFormat);
+        officeManager.execute(conversionTask);
+    }
+
+}
+</java><java name='mil/army/us/jod/OfficeDocumentUtils.java'>package mil.army.us.jod;
+
+import static org.artofsolving.jodconverter.office.OfficeUtils.*;
+
+import org.artofsolving.jodconverter.document.DocumentFamily;
+import org.artofsolving.jodconverter.office.OfficeException;
+
+
+import com.sun.star.lang.XComponent;
+import com.sun.star.lang.XServiceInfo;
+
+class OfficeDocumentUtils {
+
+    private OfficeDocumentUtils() {
+        throw new AssertionError("utility class must not be instantiated");
+    }
+
+    public static DocumentFamily getDocumentFamily(XComponent document) throws OfficeException {
+        XServiceInfo serviceInfo = cast(XServiceInfo.class, document);
+        if (serviceInfo.supportsService("com.sun.star.text.GenericTextDocument")) {
+            // NOTE: a GenericTextDocument is either a TextDocument, a WebDocument, or a GlobalDocument
+            // but this further distinction doesn't seem to matter for conversions
+            return DocumentFamily.TEXT;
+        } else if (serviceInfo.supportsService("com.sun.star.sheet.SpreadsheetDocument")) {
+            return DocumentFamily.SPREADSHEET;
+        } else if (serviceInfo.supportsService("com.sun.star.presentation.PresentationDocument")) {
+            return DocumentFamily.PRESENTATION;
+        } else if (serviceInfo.supportsService("com.sun.star.drawing.DrawingDocument")) {
+            return DocumentFamily.DRAWING;
+        } else {
+            throw new OfficeException("document of unknown family: " + serviceInfo.getImplementationName());
+        }
+    }
+
+}
+</java><java name='mil/army/us/jod/StandardConversionTask.java'>package mil.army.us.jod;
+
+import static org.artofsolving.jodconverter.office.OfficeUtils.cast;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.artofsolving.jodconverter.document.DocumentFamily;
+import org.artofsolving.jodconverter.document.DocumentFormat;
+import org.artofsolving.jodconverter.office.OfficeException;
+
+import com.sun.star.lang.XComponent;
+import com.sun.star.util.XRefreshable;
+
+public class StandardConversionTask extends AbstractConversionTask {
+
+    private final DocumentFormat outputFormat;
+
+    private Map&lt;String,?&gt; defaultLoadProperties;
+    private DocumentFormat inputFormat;
+
+    public StandardConversionTask(File inputFile, File outputFile, DocumentFormat outputFormat) {
+        super(inputFile, outputFile);
+        this.outputFormat = outputFormat;
+    }
+
+    public void setDefaultLoadProperties(Map&lt;String, ?&gt; defaultLoadProperties) {
+        this.defaultLoadProperties = defaultLoadProperties;
+    }
+
+    public void setInputFormat(DocumentFormat inputFormat) {
+        this.inputFormat = inputFormat;
+    }
+
+    @Override
+    protected void modifyDocument(XComponent document) throws OfficeException {
+        XRefreshable refreshable = cast(XRefreshable.class, document);
+        if (refreshable != null) {
+            refreshable.refresh();
+        }
+    }
+
+    @Override
+    protected Map&lt;String,?&gt; getLoadProperties(File inputFile) {
+        Map&lt;String,Object&gt; loadProperties = new HashMap&lt;String,Object&gt;();
+        if (defaultLoadProperties != null) {
+            loadProperties.putAll(defaultLoadProperties);
+        }
+        if (inputFormat != null &amp;&amp; inputFormat.getLoadProperties() != null) {
+            loadProperties.putAll(inputFormat.getLoadProperties());
+        }
+        return loadProperties;
+    }
+
+    @Override
+    protected Map&lt;String,?&gt; getStoreProperties(File outputFile, XComponent document) {
+        DocumentFamily family = OfficeDocumentUtils.getDocumentFamily(document);
+        return outputFormat.getStoreProperties(family);
+    }
+
+}
+</java></javaproject></code>
+<item name='$JavaCompilerSource'><text>1.5</text></item>
+<item name='$JavaCompilerTarget'><text>1.5</text></item></scriptlibrary>
+

@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='utf-8'?>
+<agent name='TestClass' xmlns='http://www.lotus.com/dxl' version='9.0' maintenanceversion='1.0'
+ replicaid='85257CB50072A923' hide='v3' publicaccess='false' designerversion='8.5.3'>
+<noteinfo noteid='176' unid='44D648852A79D56685257C9200529C01' sequence='8'>
+<created><datetime>20140305T100218,89-05</datetime></created>
+<modified><datetime dst='true'>20140411T134541,39-04</datetime></modified>
+<revised><datetime dst='true'>20140411T134541,38-04</datetime></revised>
+<lastaccessed><datetime dst='true'>20140411T134541,39-04</datetime></lastaccessed>
+<addedtofile><datetime dst='true'>20140409T165224,49-04</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Gregory L Washington/OU=AJ/O=ARMYJAGC</name><name>CN=Admin Glunlimited/O=Development</name></updatedby>
+<designchange><datetime dst='true'>20140411T134541,23-04</datetime></designchange>
+<trigger type='actionsmenu'/>
+<documentset type='runonce'/><code event='action'><javaproject class='JavaAgent.class'
+ codepath='c:\Program Files (x86)\IBM\Lotus\Notes\Data'><java name='JavaAgent.java'>import lotus.domino.*;
+import java.io.File;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.util.PDFMergerUtility;
+
+public class JavaAgent extends AgentBase {
+
+    public void NotesMain() {
+
+      try {
+          Session session = getSession();
+          AgentContext agentContext = session.getAgentContext();
+
+          // (Your code goes here)
+          createNew();
+          combine();
+
+      } catch(Exception e) {
+          e.printStackTrace();
+       }
+   }
+   
+    
+    public void combine()
+    {
+        try
+        {
+        	PDFMergerUtility mergePdf = new PDFMergerUtility();
+        	String folder ="C:\\Users\\washingtongl\\Documents\\Temp";
+        	File _folder = new File(folder);
+        	File[] filesInFolder;
+        	filesInFolder = _folder.listFiles();
+        	for (File string : filesInFolder)
+        	{
+        		mergePdf.addSource(string);    
+        	}
+        	mergePdf.setDestinationFileName("C:\\Users\\washingtongl\\Documents\\Temp\\Combined.pdf");
+        	mergePdf.mergeDocuments();
+        }
+        catch(Exception e)
+        {
+        	e.printStackTrace();
+        }  
+    }
+
+    public void createNew()
+    {
+    	PDDocument document = null;
+    	try
+    	{
+    		String filename="C:\\Users\\washingtongl\\Documents\\Temp\\test.pdf";
+    		document=new PDDocument();
+    		PDPage blankPage = new PDPage();
+    		document.addPage( blankPage );
+    		document.save( filename );
+    	}
+    	catch(Exception e)
+    	{
+    		e.printStackTrace();
+    	}
+} 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}</java></javaproject></code>
+<rundata processeddocs='0' exitcode='0' agentdata='4F6990279AB7536085257C93005BFB23'>
+<agentmodified><datetime>20140306T114419,29-05</datetime></agentmodified>
+<agentrun><datetime>20140306T114441,70-05</datetime></agentrun>
+<runlog>Started running agent 'TestClass' on 03/06/2014 11:44:40 AM
+Ran Java Agent Class
+Done running agent 'TestClass' on 03/06/2014 11:44:41 AM
+</runlog></rundata>
+<item name='$JavaCompilerSource'><text>1.5</text></item>
+<item name='$JavaCompilerTarget'><text>1.5</text></item></agent>
+
